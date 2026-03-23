@@ -724,13 +724,13 @@ function getLiveSportData(sport){
   var livePmap=LIVE_PMAP[sport]||{};
   var merged={},players=[];
   (base.players||[]).forEach(function(p){
-    var k=(p&&((p.nmL)||(p.nm&&p.nm.toLowerCase())))||"";
+    var k=getPlayerStoreKey(p);
     if(!k||merged[k]) return;
     merged[k]=p;
     players.push(p);
   });
   livePlayers.forEach(function(p){
-    var k=(p&&((p.nmL)||(p.nm&&p.nm.toLowerCase())))||"";
+    var k=getPlayerStoreKey(p);
     if(!k) return;
     if(!merged[k]){
       merged[k]=p;
@@ -1400,6 +1400,7 @@ var PLAYER_CACHE={}; // name+sport -> full player obj with seasons
 
 // ── LIVE DB: merged local + fetched players ────────────────────────────────
 var LIVE_DB={NFL:[],NBA:[],MLB:[],NHL:[]};
+var LIVE_KEYMAP={NFL:{},NBA:{},MLB:{},NHL:{}};
 var LIVE_PMAP={NFL:{},NBA:{},MLB:{},NHL:{}};
 var DB_STATUS={NFL:"idle",NBA:"idle",MLB:"idle",NHL:"idle"};
 var DB_LISTENERS={NFL:[],NBA:[],MLB:[],NHL:[]};
@@ -1445,20 +1446,52 @@ function normalizePlayerPos(sport,pos,isGoalie){
   return pos||"";
 }
 
+function getLatestSeasonYear(player){
+  var seasons=(player&&player.seasons)||[];
+  var years=seasons.map(function(s){return parseInt(s&&s.year,10);}).filter(function(y){return !isNaN(y)&&y>0;});
+  if(years.length) return Math.max.apply(null,years);
+  return parseInt(player&&player.end,10)||null;
+}
+
+function getPlayerSeasonsDesc(player){
+  return ((player&&player.seasons)||[])
+    .map(function(s){return parseInt(s&&s.year,10);})
+    .filter(function(y){return !isNaN(y)&&y>0;})
+    .sort(function(a,b){return b-a;});
+}
+
+function getPlayerStoreKey(p){
+  var nmL=(p&&((p.nmL)||(p.nm&&p.nm.toLowerCase())))||"";
+  var pos=(p&&p.pos)||"";
+  var start=parseInt((p&&p.start),10)||0;
+  var end=getLatestSeasonYear(p)||0;
+  if(p&&p.id) return "id:"+String(p.id);
+  return "nm:"+nmL+"|"+pos+"|"+start+"|"+end;
+}
+
 function mergePlayers(sport,newPlayers){
-  var existing=LIVE_PMAP[sport];
+  var existingByKey=LIVE_KEYMAP[sport];
+  var existingByName=LIVE_PMAP[sport];
   newPlayers.forEach(function(p){
     p.pos=normalizePlayerPos(sport,p.pos,p.isGoalie);
     if(sport==="NFL") applyNFLSeasonDefaults(p);
     if(sport==="NHL") p.isGoalie=(p.pos==="G");
-    var k=p.nmL||(p.nm&&p.nm.toLowerCase())||"";
-    if(!k) return;
-    if(!existing[k]){
-      existing[k]=p;
+    var nameKey=p.nmL||(p.nm&&p.nm.toLowerCase())||"";
+    if(!nameKey) return;
+    var storeKey=getPlayerStoreKey(p);
+    if(!existingByKey[storeKey]){
+      existingByKey[storeKey]=p;
       LIVE_DB[sport].push(p);
-    } else if(p.id&&!existing[k].id){
-      // Upgrade existing entry with the real sport API id (critical for headshots)
-      existing[k].id=p.id;
+    } else {
+      var target=existingByKey[storeKey];
+      if(p.id&&!target.id) target.id=p.id;
+      if(p.espnId&&!target.espnId) target.espnId=p.espnId;
+      if(p.headshot&&!target.headshot) target.headshot=p.headshot;
+      if(p.col&&!target.col) target.col=p.col;
+      if(p.colConf&&!target.colConf) target.colConf=p.colConf;
+    }
+    if(!existingByName[nameKey]||((getLatestSeasonYear(p)||0)>(getLatestSeasonYear(existingByName[nameKey])||0))){
+      existingByName[nameKey]=existingByKey[storeKey];
     }
   });
 }
@@ -2309,7 +2342,7 @@ function ModalComp(props){
               setLoading(false);
               if(!player){setSel({src:"local",p:p});setQ(p.nm);setErr(null);setYr(easyMode?(pickBestSeasonForPlayer(p,row,cat,sport)||p.end):p.end);return;}
               setSel({src:"api",nm:p.nm,id:foundId,pos:p.pos,player:player});
-              setYr(easyMode?(pickBestSeasonForPlayer(player,row,cat,sport)||(player.seasons[0]&&player.seasons[0].year)||p.end):((player.seasons[0]&&player.seasons[0].year)||p.end));
+              setYr(easyMode?(pickBestSeasonForPlayer(player,row,cat,sport)||getLatestSeasonYear(player)||p.end):(getLatestSeasonYear(player)||p.end));
             });
           } else {
             setLoading(false);
@@ -2329,14 +2362,14 @@ function ModalComp(props){
         setLoading(false);
         if(!player){setSel({src:"local",p:p});setQ(p.nm);setErr(null);setYr(easyMode?(pickBestSeasonForPlayer(p,row,cat,sport)||p.end):p.end);return;}
         setSel({src:"api",nm:p.nm,id:pid,pos:p.pos,player:player});
-        setYr(easyMode?(pickBestSeasonForPlayer(player,row,cat,sport)||(player.seasons[0]&&player.seasons[0].year)||p.end):((player.seasons[0]&&player.seasons[0].year)||p.end));
+        setYr(easyMode?(pickBestSeasonForPlayer(player,row,cat,sport)||getLatestSeasonYear(player)||p.end):(getLatestSeasonYear(player)||p.end));
       });
       return;
     }
     // Use local data — full per-season stats available
     setSel({src:"local",p:p});setQ(p.nm);setErr(null);
     // Default to most recent season
-    var latestYr=p.seasons&&p.seasons.length>0?p.seasons[0].year:p.end;
+    var latestYr=getLatestSeasonYear(p)||p.end;
     setYr(easyMode?(pickBestSeasonForPlayer(p,row,cat,sport)||latestYr):latestYr);
   }
 
@@ -2346,7 +2379,7 @@ function ModalComp(props){
     var localP=LIVE_PMAP[sport]&&(LIVE_PMAP[sport][nmL]||LIVE_PMAP[sport][nmL.replace(/\s+(jr\.?|sr\.?|ii|iii|iv)$/i,"").trim()]);
     if(localP&&localP.seasons&&localP.seasons.length>0){
       setSel({src:"local",p:localP});setQ(localP.nm);setErr(null);
-      setYr(easyMode?(pickBestSeasonForPlayer(localP,row,cat,sport)||(localP.seasons[0]&&localP.seasons[0].year)||localP.end):((localP.seasons[0]&&localP.seasons[0].year)||localP.end));
+      setYr(easyMode?(pickBestSeasonForPlayer(localP,row,cat,sport)||getLatestSeasonYear(localP)||localP.end):(getLatestSeasonYear(localP)||localP.end));
       return;
     }
 
@@ -2362,7 +2395,7 @@ function ModalComp(props){
       mergePlayers(sport,[player]);
       setSel({src:"local",p:player});
       setQ(player.nm);
-      setYr(easyMode?(pickBestSeasonForPlayer(player,row,cat,sport)||(player.seasons[0]&&player.seasons[0].year)||player.end):((player.seasons[0]&&player.seasons[0].year)||player.end));
+      setYr(easyMode?(pickBestSeasonForPlayer(player,row,cat,sport)||getLatestSeasonYear(player)||player.end):(getLatestSeasonYear(player)||player.end));
     });
   }
 
@@ -2480,9 +2513,9 @@ function ModalComp(props){
       val:absV,pct:calcPct(absV,av),lb:lbR,careerCat:false});
   }
 
-  var yrs=sel&&sel.player?sel.player.seasons.map(function(s){return s.year;}).filter(Boolean):
-    sel&&sel.p?sel.p.seasons.map(function(s){return s.year;}):[];
-  yrs=Array.from(new Set(yrs)).sort(function(a,b){return b-a;});
+  var yrs=sel&&sel.player?getPlayerSeasonsDesc(sel.player):
+    sel&&sel.p?getPlayerSeasonsDesc(sel.p):[];
+  yrs=Array.from(new Set(yrs));
 
   var sc=SPORT_COLORS[sport]||SPORT_COLORS.NFL;
   var submitOk=sel&&yr&&!loading&&!(sel.failed);
