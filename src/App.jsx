@@ -4141,7 +4141,7 @@ export default function App(){
   function onGuess(i,d){setAnswers(function(prev){var n=prev.slice();n[i]=d;return n;});}
   function doShare(){
     var shareSeed=card&&card.seed?card.seed:seed;
-    var txt="Burnsy's Statpad | "+sport+" | "+(cat&&cat.lbl)+" "+(cat&&cat.sub)+" | Card Seed #"+shareSeed+" | Score: "+score.toLocaleString(undefined,{maximumFractionDigits:1});
+    var txt="Statpad Forever | "+sport+" | "+(cat&&cat.lbl)+" "+(cat&&cat.sub)+" | Card Seed #"+shareSeed+" | Score: "+score.toLocaleString(undefined,{maximumFractionDigits:1});
     navigator.clipboard.writeText(txt).then(function(){setShareMsg("Copied!");setTimeout(function(){setShareMsg("");},2000);});
   }
   function doLoad(){var n=parseInt(loadVal);if(!isNaN(n)){setSeed(n);setShowLoad(false);setLoadVal("");}}
@@ -4161,7 +4161,7 @@ export default function App(){
       {/* Header */}
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 16px 6px",background:"#111520"}}>
         <div style={{display:"flex",flexDirection:"column",lineHeight:1}}>
-          <div style={{fontFamily:"Arial Black,sans-serif",fontWeight:900,fontSize:20,color:"#fff",letterSpacing:-0.5}}>BURNSY'S <span style={{color:sc.accent}}>STATPAD</span></div>
+          <div style={{fontFamily:"Arial Black,sans-serif",fontWeight:900,fontSize:20,color:"#fff",letterSpacing:-0.5}}>STATPAD <span style={{color:sc.accent}}>FOREVER</span></div>
           <div style={{fontFamily:"Arial Black,sans-serif",fontWeight:900,fontSize:10,color:"#6b7280",letterSpacing:2,marginTop:2}}>INFINITE</div>
         </div>
         <div style={{display:"flex",gap:6,alignItems:"center"}}>
@@ -4237,7 +4237,7 @@ export default function App(){
       {shareMsg&&<div style={{textAlign:"center",color:"#22c55e",fontSize:13,fontWeight:600,paddingBottom:8}}>{shareMsg}</div>}
       {showWelcome&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.82)",zIndex:1200,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
         <div style={{width:"100%",maxWidth:430,background:"#111520",border:"1px solid #252d3f",borderRadius:18,padding:"22px 18px 18px",boxShadow:"0 24px 60px rgba(0,0,0,0.45)"}}>
-          <div style={{fontFamily:"Arial Black,sans-serif",fontWeight:900,fontSize:24,lineHeight:1.05,color:"white"}}>Welcome to Burnsy&apos;s Infinite Statpad!</div>
+              <div style={{fontFamily:"Arial Black,sans-serif",fontWeight:900,fontSize:24,lineHeight:1.05,color:"white"}}>Welcome to Statpad Forever!</div>
           <div style={{marginTop:12,color:"#cbd5e1",fontFamily:"system-ui,sans-serif",fontSize:14,lineHeight:1.5}}>
             For each row, pick the player and season meeting the criteria you think would have the best score for the board&apos;s stat. You can play on easy mode, where you don&apos;t have to pick the best season of a player.
           </div>
