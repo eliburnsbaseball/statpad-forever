@@ -1245,18 +1245,39 @@ function genCard(seed,catId,sport){
         if(["nfl","nba","mlb","nhl"].indexOf((""+logo.type).toLowerCase())>=0) return "league";
         return null;
       }
-    function pickWindowSize(kind){
-      if(kind==="team") return 10+Math.floor(Math.pow(rand(),3)*66);
-      if(kind==="division") return 6+Math.floor(rand()*9);
-      if(kind==="league") return 3+Math.floor(rand()*3);
+    function getEraAge(anchor,minYear,maxYear){
+      var span=Math.max(1,maxYear-minYear);
+      return Math.max(0,Math.min(1,(maxYear-anchor)/span));
+    }
+    function pickWindowSize(kind,anchor,minYear,maxYear){
+      var eraAge=getEraAge(anchor,minYear,maxYear);
+      if(kind==="team"){
+        var teamBase=10+Math.floor(Math.pow(rand(),2.25)*26);
+        var teamBonus=Math.floor(Math.pow(eraAge,1.15)*40);
+        return Math.min(75,teamBase+teamBonus);
+      }
+      if(kind==="division"){
+        var divBase=6+Math.floor(Math.pow(rand(),1.6)*8);
+        var divBonus=Math.floor(Math.pow(eraAge,1.2)*16);
+        return Math.min(30,divBase+divBonus);
+      }
+      if(kind==="league"){
+        var lgBase=3+Math.floor(rand()*3);
+        var lgBonus=Math.floor(Math.pow(eraAge,1.5)*12);
+        if(sport==="MLB"&&anchor<1940) lgBonus+=12+Math.floor(((1940-anchor)/54)*18);
+        return Math.min(sport==="MLB"?50:18,lgBase+lgBonus);
+      }
       return null;
     }
-      function clampWindowBounds(anchor,minYear,maxYear,size){
+      function clampWindowBounds(kind,anchor,minYear,maxYear,size){
         if(size==null||isNaN(anchor)||isNaN(minYear)||isNaN(maxYear)) return null;
         var full=Math.max(1,maxYear-minYear+1);
         var span=Math.min(size,full);
         if(span>=full) return {ys:minYear,ye:maxYear};
-        var before=Math.floor(rand()*span);
+        var eraAge=getEraAge(anchor,minYear,maxYear);
+        var beforeBias=kind==="league"?0.18:kind==="division"?0.28:0.38;
+        var maxBefore=Math.max(0,Math.min(span-1,anchor-minYear));
+        var before=Math.floor(rand()*Math.max(1,Math.round(maxBefore*(1-eraAge*(1-beforeBias)))));
         var start=anchor-before;
         var end=start+span-1;
         if(start<minYear){
@@ -1276,10 +1297,11 @@ function genCard(seed,catId,sport){
           var anchorYear=parseInt(pick.s.year,10);
           if(allYears.length&& !isNaN(anchorYear)){
             var bounds=clampWindowBounds(
+              windowType,
               anchorYear,
               Math.min.apply(null,allYears),
               Math.max.apply(null,allYears),
-              pickWindowSize(windowType)
+              pickWindowSize(windowType,anchorYear,Math.min.apply(null,allYears),Math.max.apply(null,allYears))
             );
             if(bounds){
               ys=bounds.ys;
