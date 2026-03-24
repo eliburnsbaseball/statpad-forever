@@ -473,6 +473,18 @@ function getTeamMeta(team, sport){
   var teams=sport==="NFL"?NFL_TEAMS:sport==="NBA"?NBA_TEAMS:sport==="MLB"?MLB_TEAMS:NHL_TEAMS;
   return {raw:raw,key:key,meta:(teams&&teams[key])||null};
 }
+function getEspnLeagueLogoSrc(sport){
+  var s=(""+(sport||"")).toLowerCase();
+  if(!s) return null;
+  return "https://a.espncdn.com/i/teamlogos/leagues/500/"+s+".png";
+}
+function getEspnTeamLogoSrc(sport, team){
+  var s=(""+(sport||"")).toUpperCase().trim();
+  var info=getTeamMeta(team, s);
+  var key=(info&&info.key?info.key:team||"").toLowerCase();
+  if(!s||!key) return null;
+  return "https://a.espncdn.com/i/teamlogos/"+s.toLowerCase()+"/500/"+key+".png";
+}
 
 var NBA_PLAYERS = [];
 var NBA_PMAP={};
@@ -1385,16 +1397,13 @@ function SportLogo(props){
   if(logo.type==="team"){
     var teamSport=logo.sport||sport;
     var teamInfo=getTeamMeta(logo.val,teamSport);
-    var key=teamSport+"_"+logo.val;
-    var src=SPORT_LOGOS[key];
-    if(!src&&teamInfo.key) src=SPORT_LOGOS[teamSport+"_"+teamInfo.key];
+    var src=getEspnTeamLogoSrc(teamSport,logo.val);
     if(src) return <div style={{width:sz,height:sz,display:"flex",alignItems:"center",justifyContent:"center"}}><img src={src} alt={logo.val} style={{width:sz,height:sz,objectFit:"contain"}}/></div>;
     var tm=teamInfo.meta||{p:"#333",s:"#888"};
     return <div style={{width:sz,height:sz,borderRadius:6,background:tm.p,display:"flex",alignItems:"center",justifyContent:"center",color:tm.s,fontFamily:"Arial Black,sans-serif",fontWeight:900,fontSize:10}}>{logo.val}</div>;
   }
   if(logo.type==="conf"){
-    var confKey=(logo.sport||sport)+"_"+logo.val.toUpperCase();
-    var confSrc=SPORT_LOGOS[confKey];
+    var confSrc=getEspnLeagueLogoSrc(logo.sport||sport);
     if(confSrc) return <div style={{width:sz,height:sz,display:"flex",alignItems:"center",justifyContent:"center"}}><img src={confSrc} alt={logo.val} style={{width:sz,height:sz,objectFit:"contain"}}/></div>;
     var bg=logo.val==="East"||logo.val==="AL"||logo.val==="AFC"?"#B22222":"#003B8E";
     return <svg width={sz} height={sz} viewBox="0 0 56 56"><rect width="56" height="56" rx="6" fill="#111"/><polygon points="28,4 52,18 52,38 28,52 4,38 4,18" fill={bg}/><text x="28" y="34" textAnchor="middle" fill="#FFF" fontFamily="Arial Black,sans-serif" fontSize="11" fontWeight="900">{logo.val}</text></svg>;
@@ -1403,7 +1412,7 @@ function SportLogo(props){
     var collegeSrc=getCollegeLogoSrc(logo.college||"");
     if(collegeSrc) return <div style={{width:sz,height:sz,display:"flex",alignItems:"center",justifyContent:"center"}}><img src={collegeSrc} alt={logo.college||"college"} style={{width:sz,height:sz,objectFit:"contain"}}/></div>;
     var fallbackLeague=(logo.sport||sport||"").toUpperCase();
-    var fallbackSrc=SPORT_LOGOS[fallbackLeague+"_"+fallbackLeague];
+    var fallbackSrc=getEspnLeagueLogoSrc(fallbackLeague);
     if(fallbackSrc) return <div style={{width:sz,height:sz,display:"flex",alignItems:"center",justifyContent:"center"}}><img src={fallbackSrc} alt={fallbackLeague} style={{width:sz,height:sz,objectFit:"contain"}}/></div>;
     return <div style={{width:sz,height:sz,borderRadius:6,background:"#1e3a5f",display:"flex",alignItems:"center",justifyContent:"center",padding:"4px"}}><div style={{color:"white",fontFamily:"Arial Black,sans-serif",fontWeight:900,fontSize:9,lineHeight:1,textAlign:"center"}}>{(logo.college||"COLLEGE").slice(0,8)}</div></div>;
   }
@@ -1415,7 +1424,7 @@ function SportLogo(props){
     return (
       <div style={{width:sz,height:sz,display:"grid",gridTemplateColumns:"1fr 1fr",gap:1,borderRadius:4,overflow:"hidden"}}>
         {logo.teams.slice(0,4).map(function(t){
-          var src=SPORT_LOGOS["NFL_"+t];
+          var src=getEspnTeamLogoSrc(logo.sport||sport||"NFL",t);
           return src?<img key={t} src={src} style={{width:"100%",height:"100%",objectFit:"contain",background:"#1a1f2b"}}/>:<div key={t} style={{background:"#333"}}/>;
         })}
       </div>
@@ -1423,8 +1432,7 @@ function SportLogo(props){
   }
   var sColors={nba:"#C9082A",mlb:"#002D72",nhl:"#000099",nfl:"#013087",NBA:"#C9082A",MLB:"#002D72",NHL:"#000099",NFL:"#013087"};
   // Try to show real league logo first
-  var leagueKey=logo.type.toUpperCase()+"_"+logo.type.toUpperCase();
-  var leagueSrc=SPORT_LOGOS[leagueKey];
+  var leagueSrc=getEspnLeagueLogoSrc(logo.type);
   if(leagueSrc) return <div style={{width:sz,height:sz,display:"flex",alignItems:"center",justifyContent:"center"}}><img src={leagueSrc} alt={logo.type} style={{width:sz,height:sz,objectFit:"contain"}}/></div>;
   var bg2=sColors[logo.type]||"#333";
   return <div style={{width:sz,height:sz,borderRadius:6,background:bg2,display:"flex",alignItems:"center",justifyContent:"center",color:"white",fontFamily:"Arial Black,sans-serif",fontWeight:900,fontSize:11}}>{logo.type.toUpperCase()}</div>;
@@ -3986,7 +3994,7 @@ function RevealedRow(props){
   },[safeName,sport]);
   var headshot=useHeadshot(safeName,sport,_espnId,ans.id||null);
   var teamInfo=getTeamMeta(ans.team,sport);
-  var teamLogoSrc=SPORT_LOGOS[sport+"_"+ans.team]||SPORT_LOGOS[sport+"_"+teamInfo.key]||null;
+  var teamLogoSrc=getEspnTeamLogoSrc(sport,ans.team)||getEspnTeamLogoSrc(sport,teamInfo.key)||null;
   var qualLabel=row&&row.c&&row.c.q?(row.c.q.main||"None"):"None";
   var statUnit=cat&&cat.unit?cat.unit:"";
   var pctLabel=(pctNum||0)+"% OF MAX";
