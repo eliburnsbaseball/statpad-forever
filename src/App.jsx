@@ -2863,6 +2863,7 @@ var PLAYER_IDS={
     "brandon marshall":9596,
     "anquan boldin":5489,
     "reggie wayne":2578,
+    "tony romo":5209,
     "hines ward":5559,
     "laquon treadwell":3054311,
     "demaryius thomas":13234,
@@ -3572,15 +3573,18 @@ function useHeadshot(nm,sport,espnId,playerId){
         if(sport==="NFL"){
           var espnUrl2=getEspnHsUrl(sport,sid2);
           if(espnUrl2) offer2(espnUrl2);
-          loadNFLHeadshots().then(function(map){
+          setTimeout(function(){
             if(!active2||settled2) return;
-            var mapped2=map&&map[sid2];
-            if(!mapped2) return;
-            if(preferRetiredNflWiki2&&(!isEspnNflHeadshot2(mapped2)||isLikelyPlaceholderNfl2(mapped2))){
-              return;
-            }
-            offer2(mapped2);
-          });
+            loadNFLHeadshots().then(function(map){
+              if(!active2||settled2) return;
+              var mapped2=map&&map[sid2];
+              if(!mapped2) return;
+              if(preferRetiredNflWiki2&&(!isEspnNflHeadshot2(mapped2)||isLikelyPlaceholderNfl2(mapped2))){
+                return;
+              }
+              offer2(mapped2);
+            });
+          },900);
           return;
         }
         if(sport==="NBA"){
@@ -3660,11 +3664,14 @@ function useHeadshot(nm,sport,espnId,playerId){
           if(sport!=="NFL") scanIdCandidate2(espnId);
         }
           if(sport==="NFL"){
-            offer2(NFL_PAGE_HEADSHOTS[nmL2]||NFL_PAGE_HEADSHOTS[stripped2]||NFL_PAGE_HEADSHOTS[cleaned2]);
-            if(baseP2&&baseP2.nm){
-              var baseName2=(baseP2.nm||"").toLowerCase().trim();
-              offer2(NFL_PAGE_HEADSHOTS[baseName2]);
-            }
+            setTimeout(function(){
+              if(settled2) return;
+              offer2(NFL_PAGE_HEADSHOTS[nmL2]||NFL_PAGE_HEADSHOTS[stripped2]||NFL_PAGE_HEADSHOTS[cleaned2]);
+              if(baseP2&&baseP2.nm){
+                var baseName2=(baseP2.nm||"").toLowerCase().trim();
+                offer2(NFL_PAGE_HEADSHOTS[baseName2]);
+              }
+            },1400);
           }
           if(preferRetiredNflWiki2){
             offerWikiSearch2(nm+" NFL",["football","nfl","running back","wide receiver","quarterback","linebacker","american football"]);
@@ -3680,14 +3687,13 @@ function useHeadshot(nm,sport,espnId,playerId){
           else if(preferEspnNba2) setTimeout(queueLocalCandidates2,350);
           else if(preferRetiredNflWiki2||preferRetiredNbaWiki2) setTimeout(queueLocalCandidates2,1400);
           else queueLocalCandidates2();
-          var deferNflName2=!!(sport==="NFL"&&(playerId||preferRetiredNflWiki2));
+          var deferNflName2=!!(sport==="NFL");
           if(deferNflName2){
             setTimeout(function(){
               if(settled2) return;
-              if(preferRetiredNflWiki2) return;
               offerNFLName2(nm);
               if(baseP2&&baseP2.nm) offerNFLName2(baseP2.nm);
-            },1200);
+            },1800);
           } else {
           offerNFLName2(nm);
           if(baseP2&&baseP2.nm) offerNFLName2(baseP2.nm);
