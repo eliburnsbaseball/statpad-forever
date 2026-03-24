@@ -137,7 +137,7 @@ export const COLLEGE_NAME_TO_SLUG = {
   "UCLA": "ucla",
   "UConn": "uconn",
   "UNC": "north-carolina",
-  "USC": "usc",
+  "USC": "southern-california",
   "Villanova": "villanova",
   "Virginia": "virginia",
   "Virginia Tech": "virginia-tech",

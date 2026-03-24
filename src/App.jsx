@@ -483,6 +483,12 @@ function getEspnTeamLogoSrc(sport, team){
   var info=getTeamMeta(team, s);
   var key=(info&&info.key?info.key:team||"").toLowerCase();
   if(!s||!key) return null;
+  var overrides={
+    NHL:{LAK:"la",SJS:"sj",TBL:"tb"},
+    NBA:{NOP:"no",UTA:"utah"}
+  };
+  var canon=(info&&info.key?info.key:"").toUpperCase();
+  if(overrides[s]&&overrides[s][canon]) key=overrides[s][canon];
   return "https://a.espncdn.com/i/teamlogos/"+s.toLowerCase()+"/500/"+key+".png";
 }
 
