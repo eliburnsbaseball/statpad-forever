@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
+import * as htmlToImage from "html-to-image";
 import { COLLEGE_NAME_TO_SLUG, getCollegeLogoSrc as collegeLogoSrcFromMeta } from "./collegeMeta.js";
 var SPORT_LOGOS = {
   "MLB_AL": "data:image/png;base64,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",
@@ -1079,7 +1080,7 @@ function buildDoubleQualificationEntries(viable,all,cat,sport){
       var lbAll=all.filter(function(e){
         return cat.career?(a.c.fn(e.p,e.p.seasons[0])&&b.c.fn(e.p,e.p.seasons[0])):(a.c.fn(e.p,e.s)&&b.c.fn(e.p,e.s));
       });
-      if(lbAll.length<3) continue;
+      if(lbAll.length<7) continue;
       lbAll.sort(function(x,y){return y.v-x.v;});
       var qa=a.c.q||{},qb=b.c.q||{};
       combos.push({
@@ -1189,6 +1190,16 @@ function genCard(seed,catId,sport){
   var cat=sd.cats.find(function(c){return c.id===catId;})||sd.cats[0];
   var rand=rng(seed);
   var eligPlayers=filterByCat(sd.players,cat,sport);
+  function constraintAllowedForCat(c){
+    if(sport!=="NFL"||!c||!c.id) return true;
+    var defenseCats={tackles:1,sacks:1,forcedFumbles:1};
+    if(!defenseCats[cat.id]) return true;
+    var offenseOnlyConstraints={
+      pass4k:1,pass5k:1,td30p:1,td40p:1,pr100:1,pr80:1,i5:1,
+      rush1k:1,rush2k:1,rec1200:1,r100:1,s2k:1
+    };
+    return !offenseOnlyConstraints[c.id];
+  }
   var all=[];
   eligPlayers.forEach(function(p){
     if(cat.career){
@@ -1205,6 +1216,7 @@ function genCard(seed,catId,sport){
   if(all.length<5) return null;
   var viable=[];
   sd.constraints.forEach(function(c){
+    if(!constraintAllowedForCat(c)) return;
     if(sport==="NHL"){
       if(cat.pos==="goalie"&&c.id==="skater") return;
       if(!cat.pos&&!cat.career){
@@ -1212,7 +1224,7 @@ function genCard(seed,catId,sport){
       }
     }
     var lbAll=all.filter(function(e){return cat.career?c.fn(e.p,e.p.seasons[0]):c.fn(e.p,e.s);});
-    if(lbAll.length>0){
+    if(lbAll.length>=7){
       lbAll.sort(function(a,b){return b.v-a.v;});
       viable.push({c:c,lbAll:lbAll});
     }
@@ -1316,11 +1328,12 @@ function genCard(seed,catId,sport){
                 var y=parseInt(e.s.year,10);
                 return !isNaN(y)&&y>=ys&&y<=ye;
               });
-              if(lbAll.length<1) return false;
+              if(lbAll.length<7) return false;
             }
           }
         }
       }
+      if(lbAll.length<7) return false;
       var lb=lbAll.slice(0,5).map(function(e,i){return {rank:i+1,nm:e.p.nm,year:e.s.year,team:e.s.team,v:e.v};});
       var myr=lbAll.map(function(e){return e.s.year;});
       var mn=Math.min.apply(null,myr),mx=Math.max.apply(null,myr);
@@ -1583,6 +1596,326 @@ function mergePlayers(sport,newPlayers){
       existingByName[nameKey]=existingByKey[storeKey];
     }
   });
+}
+
+function nflConstraintAllowedForCat(cat,c,sport){
+  if(sport!=="NFL"||!c||!c.id) return true;
+  var defenseCats={tackles:1,sacks:1,forcedFumbles:1};
+  if(!defenseCats[cat.id]) return true;
+  var offenseOnlyConstraints={
+    pass4k:1,pass5k:1,td30p:1,td40p:1,pr100:1,pr80:1,i5:1,
+    rush1k:1,rush2k:1,rec1200:1,r100:1,s2k:1
+  };
+  return !offenseOnlyConstraints[c.id];
+}
+
+function getConstraintDisplayLabel(c,sport){
+  if(!c) return "Select row";
+  if(c.q&&c.q.isCollege) return "College: "+c.q.college;
+  if(c.q&&c.q.isCollegeConf) return "College Conf.: "+c.q.collegeConf;
+  if(c.logo&&c.logo.type==="team"){
+    var tm=getTeamMeta(c.logo.val,sport);
+    return (tm&&tm.meta&&tm.meta.nm)||c.logo.val||"Team";
+  }
+  if(c.logo&&c.logo.type==="quad") return c.logo.val||"Division";
+  if(c.logo&&c.logo.type==="conf") return c.logo.val||"League";
+  if(c.q){
+    return [c.q.top,c.q.main,c.q.sub].filter(Boolean).join(" · ");
+  }
+  return c.id||"Constraint";
+}
+
+function getEligibleEntriesForConstraint(sd,cat,sport,c){
+  var eligPlayers=filterByCat(sd.players,cat,sport);
+  var out=[];
+  if(cat.career){
+    eligPlayers.forEach(function(p){
+      if(!c.fn(p,p.seasons[0]||{})) return;
+      var cv=getStatVal(null,cat,p);
+      if(cv>0) out.push({p:p,s:p.seasons[p.seasons.length-1],v:cv});
+    });
+  } else {
+    eligPlayers.forEach(function(p){
+      p.seasons.forEach(function(s){
+        if(!c.fn(p,s)) return;
+        var v=getStatVal(s,cat,p);
+        var absV=cat.invert?-v:v;
+        if(absV>0) out.push({p:p,s:s,v:absV});
+      });
+    });
+  }
+  out.sort(function(a,b){return b.v-a.v;});
+  return out;
+}
+
+function getViableConstraintOptionsForCat(sport,catId){
+  var sd=getLiveSportData(sport);
+  if(!sd||!sd.players||!sd.players.length) return [];
+  var cat=sd.cats.find(function(c){return c.id===catId;})||sd.cats[0];
+  if(!cat) return [];
+  return sd.constraints.filter(function(c){
+    if(!nflConstraintAllowedForCat(cat,c,sport)) return false;
+    if(sport==="NHL"){
+      if(cat.pos==="goalie"&&c.id==="skater") return false;
+      if(!cat.pos&&!cat.career){
+        if(c.id==="goalie"||c.id==="gw30"||c.id==="gw35"||c.id==="goalieL"||c.id==="sv920"||c.id==="so5") return false;
+      }
+    }
+    return getEligibleEntriesForConstraint(sd,cat,sport,c).length>=7;
+  }).map(function(c){
+    return {id:c.id,label:getConstraintDisplayLabel(c,sport)};
+  }).sort(function(a,b){return a.label.localeCompare(b.label);});
+}
+
+function isPlainQualifierConstraint(c){
+  if(!c) return false;
+  if(c.q&&c.q.isCollege) return false;
+  if(c.q&&c.q.isCollegeConf) return false;
+  if(c.logo&&["team","quad","conf","college","collegeConf"].indexOf(c.logo.type)>=0) return false;
+  return true;
+}
+
+function getTeamOptionsForCat(sport,catId){
+  var sd=getLiveSportData(sport);
+  if(!sd||!sd.players||!sd.players.length) return [];
+  var cat=sd.cats.find(function(c){return c.id===catId;})||sd.cats[0];
+  if(!cat) return [];
+  var counts={}, names={};
+  filterByCat(sd.players,cat,sport).forEach(function(p){
+    if(cat.career){
+      var cv=getStatVal(null,cat,p);
+      if(!(cv>0)) return;
+      var seen={};
+      (p.seasons||[]).forEach(function(s){
+        var t=getCanonicalTeam(sport,s&&s.team);
+        if(!t||seen[t]) return;
+        seen[t]=1;
+        counts[t]=(counts[t]||0)+1;
+        names[t]=((getTeamMeta(t,sport)||{}).meta||{}).nm||t;
+      });
+      return;
+    }
+    (p.seasons||[]).forEach(function(s){
+      var v=getStatVal(s,cat,p);
+      var absV=cat.invert?-v:v;
+      if(!(absV>0)) return;
+      var t=getCanonicalTeam(sport,s&&s.team);
+      if(!t) return;
+      counts[t]=(counts[t]||0)+1;
+      names[t]=((getTeamMeta(t,sport)||{}).meta||{}).nm||t;
+    });
+  });
+  return Object.keys(counts).filter(function(t){return counts[t]>=7;}).map(function(t){
+    return {id:t,label:(names[t]||t)+" ("+t+")",count:counts[t]};
+  }).sort(function(a,b){return a.label.localeCompare(b.label);});
+}
+
+function getTeamQualificationOptionsForCat(sport,catId){
+  var sd=getLiveSportData(sport);
+  if(!sd||!sd.players||!sd.players.length) return [];
+  var cat=sd.cats.find(function(c){return c.id===catId;})||sd.cats[0];
+  if(!cat) return [{id:"",label:"No extra qualification"}];
+  var out=[{id:"",label:"No extra qualification"}];
+  sd.constraints.forEach(function(c){
+    if(!isPlainQualifierConstraint(c)) return;
+    if(!nflConstraintAllowedForCat(cat,c,sport)) return;
+    if(sport==="NHL"){
+      if(cat.pos==="goalie"&&c.id==="skater") return;
+      if(!cat.pos&&!cat.career){
+        if(c.id==="goalie"||c.id==="gw30"||c.id==="gw35"||c.id==="goalieL"||c.id==="sv920"||c.id==="so5") return;
+      }
+    }
+    if(getEligibleEntriesForConstraint(sd,cat,sport,c).length<7) return;
+    out.push({id:c.id,label:getConstraintDisplayLabel(c,sport)});
+  });
+  return out.sort(function(a,b){
+    if(!a.id) return -1;
+    if(!b.id) return 1;
+    return a.label.localeCompare(b.label);
+  });
+}
+
+function makeCustomCard(spec){
+  if(!spec||!spec.sport||!spec.catId||!Array.isArray(spec.rows)) return null;
+  var sd=getLiveSportData(spec.sport);
+  if(!sd||!sd.players||!sd.players.length) return null;
+  var cat=sd.cats.find(function(c){return c.id===spec.catId;})||sd.cats[0];
+  if(!cat) return null;
+  var rows=[];
+  for(var i=0;i<5;i++){
+    var rowSpec=spec.rows[i]||{};
+    var c=sd.constraints.find(function(x){return x.id===rowSpec.constraintId;});
+    if(!c) return null;
+    if(!nflConstraintAllowedForCat(cat,c,spec.sport)) return null;
+    var lbAll=getEligibleEntriesForConstraint(sd,cat,spec.sport,c);
+    if(!lbAll.length) return null;
+    var ys=null,ye=null;
+    if(!cat.career){
+      var allYears=lbAll.map(function(e){return parseInt(e.s.year,10);}).filter(function(y){return !isNaN(y)&&y>0;});
+      var minYear=allYears.length?Math.min.apply(null,allYears):null;
+      var maxYear=allYears.length?Math.max.apply(null,allYears):null;
+      var start=parseInt(rowSpec.startYear,10);
+      var end=parseInt(rowSpec.endYear,10);
+      if(!isNaN(start)&&!isNaN(end)){
+        ys=Math.min(start,end);
+        ye=Math.max(start,end);
+      } else if(!isNaN(start)){
+        ys=start;ye=maxYear;
+      } else if(!isNaN(end)){
+        ys=minYear;ye=end;
+      }
+      if(ys!=null&&ye!=null){
+        lbAll=lbAll.filter(function(e){
+          var y=parseInt(e.s.year,10);
+          return !isNaN(y)&&y>=ys&&y<=ye;
+        });
+      }
+    }
+    if(lbAll.length<7) return null;
+    var pick=lbAll[0];
+    var lb=lbAll.slice(0,5).map(function(e,idx){
+      return {rank:idx+1,nm:e.p.nm,year:e.s.year,team:e.s.team,v:e.v};
+    });
+    var yl=cat.career?"CAREER":"";
+    if(!cat.career){
+      if(ys!=null&&ye!=null) yl=ys===ye?(""+ys):(ys+" to "+ye);
+      else {
+        var years=lbAll.map(function(e){return parseInt(e.s.year,10);}).filter(function(y){return !isNaN(y);});
+        if(!years.length) return null;
+        var mn=Math.min.apply(null,years),mx=Math.max.apply(null,years);
+        yl=mn===mx?(""+mn):(mn+" to "+mx);
+      }
+    }
+    rows.push({
+      c:c,
+      yl:yl,
+      ys:ys,
+      ye:ye,
+      ans:{
+        id:pick.p.id||null,
+        nm:pick.p.nm,
+        pos:pick.p.pos,
+        team:pick.s.team,
+        year:cat.career?"CAREER":pick.s.year,
+        v:pick.v,
+        lb:lb,
+        careerCat:cat.career||false
+      }
+    });
+  }
+  return {
+    rows:rows,
+    seed:Math.abs(hashSeedParts("custom",spec.sport,spec.catId,JSON.stringify(spec.rows)))%999999,
+    catId:spec.catId,
+    sport:spec.sport,
+    custom:true
+  };
+}
+
+function makeTeamCard(spec){
+  if(!spec||!spec.sport||!spec.catId||!Array.isArray(spec.rows)) return null;
+  var sd=getLiveSportData(spec.sport);
+  if(!sd||!sd.players||!sd.players.length) return null;
+  var cat=sd.cats.find(function(c){return c.id===spec.catId;})||sd.cats[0];
+  if(!cat) return null;
+  var rows=[];
+  for(var i=0;i<5;i++){
+    var rowSpec=spec.rows[i]||{};
+    var teamKey=getCanonicalTeam(spec.sport,rowSpec.team);
+    if(!teamKey) return null;
+    var qual=rowSpec.qualifierId?sd.constraints.find(function(x){return x.id===rowSpec.qualifierId;}):null;
+    if(rowSpec.qualifierId&&!qual) return null;
+    if(qual&&!isPlainQualifierConstraint(qual)) return null;
+    if(qual&&!nflConstraintAllowedForCat(cat,qual,spec.sport)) return null;
+    var ys=null,ye=null;
+    var start=parseInt(rowSpec.startYear,10);
+    var end=parseInt(rowSpec.endYear,10);
+    if(!isNaN(start)&&!isNaN(end)){ ys=Math.min(start,end); ye=Math.max(start,end); }
+    else if(!isNaN(start)) ys=start;
+    else if(!isNaN(end)) ye=end;
+    var entries=[];
+    filterByCat(sd.players,cat,spec.sport).forEach(function(p){
+      if(cat.career){
+        var playsForTeam=(p.seasons||[]).some(function(s){
+          var y=parseInt(s&&s.year,10);
+          if(getCanonicalTeam(spec.sport,s&&s.team)!==teamKey) return false;
+          if(ys!=null&&!isNaN(y)&&y<ys) return false;
+          if(ye!=null&&!isNaN(y)&&y>ye) return false;
+          return true;
+        });
+        if(!playsForTeam) return;
+        var anchor=(p.seasons&&p.seasons[0])||{};
+        if(qual&&!qual.fn(p,anchor)) return;
+        var cv=getStatVal(null,cat,p);
+        if(cv>0) entries.push({p:p,s:p.seasons[p.seasons.length-1],v:cv});
+        return;
+      }
+      (p.seasons||[]).forEach(function(s){
+        var y=parseInt(s&&s.year,10);
+        if(getCanonicalTeam(spec.sport,s&&s.team)!==teamKey) return;
+        if(ys!=null&&!isNaN(y)&&y<ys) return;
+        if(ye!=null&&!isNaN(y)&&y>ye) return;
+        if(qual&&!qual.fn(p,s)) return;
+        var v=getStatVal(s,cat,p);
+        var absV=cat.invert?-v:v;
+        if(absV>0) entries.push({p:p,s:s,v:absV});
+      });
+    });
+    entries.sort(function(a,b){return b.v-a.v;});
+    if(entries.length<7) return null;
+    var pick=entries[0];
+    var tm=getTeamMeta(teamKey,spec.sport);
+    var main=((tm&&tm.meta&&tm.meta.nm)||teamKey);
+    var top=(qual&&qual.q&&qual.q.top)||"";
+    var subParts=[];
+    if(qual&&qual.q&&qual.q.main) subParts.push(qual.q.main);
+    subParts.push("TEAM BOARD");
+    var yearText="";
+    if(cat.career) yearText="CAREER";
+    else if(ys!=null&&ye!=null) yearText=ys===ye?(""+ys):(ys+" to "+ye);
+    else if(ys!=null) yearText=ys+" to "+Math.max.apply(null,entries.map(function(e){return parseInt(e.s.year,10)||ys;}));
+    else if(ye!=null) yearText=Math.min.apply(null,entries.map(function(e){return parseInt(e.s.year,10)||ye;}))+" to "+ye;
+    else yearText=Math.min.apply(null,entries.map(function(e){return parseInt(e.s.year,10);} ))+" to "+Math.max.apply(null,entries.map(function(e){return parseInt(e.s.year,10);} ));
+    rows.push({
+      c:{
+        id:"teamcustom_"+i+"_"+teamKey+"_"+(qual?qual.id:"none"),
+        logo:{type:"team",val:teamKey,sport:spec.sport},
+        q:{top:top,main:main,sub:subParts.join(" · ")},
+        fn:(function(teamKey,ys,ye,qual){
+          return function(p,s){
+            var y=parseInt(s&&s.year,10);
+            if(getCanonicalTeam(spec.sport,s&&s.team)!==teamKey) return false;
+            if(ys!=null&&!isNaN(y)&&y<ys) return false;
+            if(ye!=null&&!isNaN(y)&&y>ye) return false;
+            return qual?qual.fn(p,s):true;
+          };
+        })(teamKey,ys,ye,qual)
+      },
+      yl:yearText,
+      ys:ys,
+      ye:ye,
+      ans:{
+        id:pick.p.id||null,
+        nm:pick.p.nm,
+        pos:pick.p.pos,
+        team:pick.s.team,
+        year:cat.career?"CAREER":pick.s.year,
+        v:pick.v,
+        lb:entries.slice(0,5).map(function(e,idx){
+          return {rank:idx+1,nm:e.p.nm,year:e.s.year,team:e.s.team,v:e.v};
+        }),
+        careerCat:cat.career||false
+      }
+    });
+  }
+  return {
+    rows:rows,
+    seed:Math.abs(hashSeedParts("teamcustom",spec.sport,spec.catId,JSON.stringify(spec.rows)))%999999,
+    catId:spec.catId,
+    sport:spec.sport,
+    custom:true,
+    customMode:"team"
+  };
 }
 
 // Notify listeners when DB updates
@@ -3202,6 +3535,7 @@ var PLAYER_IDS={
     "ukko-pekka luukkonen":8481616,
   },
   MLB:{
+    "chris davis":29170,
     "mike trout":545361,
     "aaron judge":592450,
     "mookie betts":605141,
@@ -3371,6 +3705,8 @@ var NFL_HS_MAP=null;
 var NFL_HS_PROMISE=null;
 var NFL_HS_NAME_MAP=null;
 var NFL_HS_NAME_PROMISE=null;
+var NFL_NBC_HS_MAP=null;
+var NFL_NBC_HS_PROMISE=null;
 var NBA_HS_MAP=null;
 var NBA_HS_PROMISE=null;
 var NFL_PAGE_HEADSHOTS={
@@ -3402,6 +3738,15 @@ function loadNFLHeadshotsByName(){
     .catch(function(){NFL_HS_NAME_MAP={};return NFL_HS_NAME_MAP;});
   return NFL_HS_NAME_PROMISE;
 }
+function loadNFLNBCHeadshots(){
+  if(NFL_NBC_HS_MAP) return Promise.resolve(NFL_NBC_HS_MAP);
+  if(NFL_NBC_HS_PROMISE) return NFL_NBC_HS_PROMISE;
+  NFL_NBC_HS_PROMISE=fetch("/nfl_headshots_nbc.json")
+    .then(function(r){return r.ok?r.json():{};})
+    .then(function(d){NFL_NBC_HS_MAP=d||{};return NFL_NBC_HS_MAP;})
+    .catch(function(){NFL_NBC_HS_MAP={};return NFL_NBC_HS_MAP;});
+  return NFL_NBC_HS_PROMISE;
+}
 function loadNBAHeadshots(){
   if(NBA_HS_MAP) return Promise.resolve(NBA_HS_MAP);
   if(NBA_HS_PROMISE) return NBA_HS_PROMISE;
@@ -3426,6 +3771,7 @@ function getEspnHsUrl(sport,id){
   var sid=String(id);
   if(sport==="NFL") return "https://a.espncdn.com/i/headshots/nfl/players/full/"+sid+".png";
   if(sport==="NBA") return "https://a.espncdn.com/i/headshots/nba/players/full/"+sid+".png";
+  if(sport==="MLB") return "https://a.espncdn.com/i/headshots/mlb/players/full/"+sid+".png";
   return null;
 }
 
@@ -3628,9 +3974,22 @@ function useHeadshot(nm,sport,espnId,playerId){
           });
         },900);
       }
+      function offerNflNBC2(name){
+        if(sport!=="NFL"||!name) return;
+        var key2=normalizedName2(name);
+        if(!key2) return;
+        loadNFLNBCHeadshots().then(function(map){
+          if(!active2||settled2) return;
+          offer2(map&&map[key2]);
+        });
+      }
       function offerNbaEspnId2(id){
         if(sport!=="NBA"||!id) return;
         offer2(getEspnHsUrl("NBA",String(id)));
+      }
+      function offerMlbEspnId2(id){
+        if(sport!=="MLB"||!id) return;
+        offer2(getEspnHsUrl("MLB",String(id)));
       }
       function scanNbaLocalId2(id){
         if(sport!=="NBA"||!id) return;
@@ -3673,6 +4032,8 @@ function useHeadshot(nm,sport,espnId,playerId){
         var preferRetiredNflWiki2=!!(sport==="NFL"&&(isRetiredByRange2||isHistoricalId2));
         var preferRetiredNbaWiki2=!!(sport==="NBA"&&isRetiredByRange2);
         var preferEspnNba2=!!(sport==="NBA");
+        var explicitEspnNflId2=sport==="NFL"?(PLAYER_IDS[sport]&&(PLAYER_IDS[sport][nmL2]||PLAYER_IDS[sport][stripped2]||PLAYER_IDS[sport][cleaned2])):null;
+        var trustedNflEspnId2=sport==="NFL"?(explicitEspnNflId2||espnId):null;
         function queueLocalCandidates2(){
           if(sport==="NBA"){
             var explicitNbaId2=NBA_EXPLICIT_IDS[nmL2]||NBA_EXPLICIT_IDS[stripped2]||NBA_EXPLICIT_IDS[cleaned2];
@@ -3689,15 +4050,28 @@ function useHeadshot(nm,sport,espnId,playerId){
             }
           }
           if(sport==="NFL"){
-            var explicitEspnNflId2=PLAYER_IDS[sport]&&(PLAYER_IDS[sport][nmL2]||PLAYER_IDS[sport][stripped2]||PLAYER_IDS[sport][cleaned2]);
             offerNflEspnId2(explicitEspnNflId2);
-            offerNflLocalId2(findCanonicalLocalId2());
-            offerNflLocalId2(playerId);
-            offerNflLocalId2(baseP2&&baseP2.id);
+            offerNflNBC2(nm);
+            if(baseP2&&baseP2.nm) offerNflNBC2(baseP2.nm);
+            if(!trustedNflEspnId2){
+              offerNflLocalId2(findCanonicalLocalId2());
+              offerNflLocalId2(playerId);
+              offerNflLocalId2(baseP2&&baseP2.id);
+            }
           } else if(sport==="NBA"){
             scanNbaLocalId2(findCanonicalLocalId2());
             scanNbaLocalId2(playerId);
             scanNbaLocalId2(baseP2&&baseP2.id);
+          } else if(sport==="MLB"){
+            var explicitEspnMlbId2=PLAYER_IDS[sport]&&(PLAYER_IDS[sport][nmL2]||PLAYER_IDS[sport][stripped2]||PLAYER_IDS[sport][cleaned2]);
+            offerMlbEspnId2(explicitEspnMlbId2);
+            if(baseP2&&baseP2.nm){
+              var baseMlbEspnName2=(baseP2.nm||"").toLowerCase().trim();
+              offerMlbEspnId2(PLAYER_IDS[sport]&&PLAYER_IDS[sport][baseMlbEspnName2]);
+            }
+            scanIdCandidate2(findCanonicalLocalId2());
+            scanIdCandidate2(playerId);
+            scanIdCandidate2(baseP2&&baseP2.id);
           } else {
             scanIdCandidate2(PLAYER_IDS[sport]&&(PLAYER_IDS[sport][nmL2]||PLAYER_IDS[sport][stripped2]||PLAYER_IDS[sport][cleaned2]));
             scanIdCandidate2(findCanonicalLocalId2());
@@ -3705,20 +4079,28 @@ function useHeadshot(nm,sport,espnId,playerId){
             scanIdCandidate2(baseP2&&baseP2.id);
           }
           var liveP2=LIVE_PMAP[sport]&&(LIVE_PMAP[sport][nmL2]||LIVE_PMAP[sport][stripped2]);
-          if(sport==="NFL") offerNflLocalId2(liveP2&&liveP2.id);
+          if(sport==="NFL"){ if(!trustedNflEspnId2) offerNflLocalId2(liveP2&&liveP2.id); }
           else if(sport==="NBA") scanNbaLocalId2(liveP2&&liveP2.id);
+          else if(sport==="MLB") scanIdCandidate2(liveP2&&liveP2.id);
           else scanIdCandidate2(liveP2&&liveP2.id);
           var cachedPlayer2=PLAYER_CACHE[sport+"|"+nmL2]||PLAYER_CACHE[sport+"|"+stripped2];
-          if(sport==="NFL") offerNflLocalId2(cachedPlayer2&&cachedPlayer2.id);
+          if(sport==="NFL"){
+            offerNflNBC2(cachedPlayer2&&cachedPlayer2.nm);
+            if(!trustedNflEspnId2) offerNflLocalId2(cachedPlayer2&&cachedPlayer2.id);
+          }
           else if(sport==="NBA") scanNbaLocalId2(cachedPlayer2&&cachedPlayer2.id);
+          else if(sport==="MLB") scanIdCandidate2(cachedPlayer2&&cachedPlayer2.id);
           else scanIdCandidate2(cachedPlayer2&&cachedPlayer2.id);
           if(sport==="NFL") offerNflEspnId2(espnId);
           else if(sport==="NBA") offerNbaEspnId2(espnId);
+          else if(sport==="MLB") offerMlbEspnId2(espnId);
           else scanIdCandidate2(espnId);
         }
-          if(sport==="NFL"){
+          if(sport==="NFL"&&!trustedNflEspnId2){
             setTimeout(function(){
               if(settled2) return;
+              offerNflNBC2(nm);
+              if(baseP2&&baseP2.nm) offerNflNBC2(baseP2.nm);
               offer2(NFL_PAGE_HEADSHOTS[nmL2]||NFL_PAGE_HEADSHOTS[stripped2]||NFL_PAGE_HEADSHOTS[cleaned2]);
               if(baseP2&&baseP2.nm){
                 var baseName2=(baseP2.nm||"").toLowerCase().trim();
@@ -3740,7 +4122,7 @@ function useHeadshot(nm,sport,espnId,playerId){
           else if(preferEspnNba2) setTimeout(queueLocalCandidates2,550);
           else if(preferRetiredNflWiki2||preferRetiredNbaWiki2) setTimeout(queueLocalCandidates2,1400);
           else queueLocalCandidates2();
-          var deferNflName2=!!(sport==="NFL");
+          var deferNflName2=!!(sport==="NFL"&&!trustedNflEspnId2);
           if(deferNflName2){
             setTimeout(function(){
               if(settled2) return;
@@ -3753,6 +4135,28 @@ function useHeadshot(nm,sport,espnId,playerId){
         }
 
       if(sport==="MLB"){
+        function scoreMlbEspnItem2(item){
+          var full5=normalizedName2(item&&(item.displayName||item.fullName||item.shortName||item.name));
+          if(!full5) return -1;
+          var score3=0;
+          if(full5===normTarget2) score3+=100;
+          else if(looksLikeTarget2(full5)) score3+=20;
+          if((item.sport||"")==="baseball") score3+=8;
+          if((item.league||"")==="mlb"||(item.defaultLeagueSlug||"")==="mlb") score3+=8;
+          return score3;
+        }
+        function useMlbEspnResults2(d){
+          var items3=Array.isArray(d&&d.items)?d.items:[];
+          items3=items3.filter(function(item){return item&&item.id&&item.type==="player";});
+          items3.sort(function(a,b){return scoreMlbEspnItem2(b)-scoreMlbEspnItem2(a);});
+          items3.slice(0,5).forEach(function(item){
+            if(scoreMlbEspnItem2(item)>=100&&item.headshot&&item.headshot.href&&item.headshot.href.indexOf("/headshots/")>=0) offer2(item.headshot.href);
+            offerMlbEspnId2(item.id);
+          });
+        }
+        fetchJson2("https://site.web.api.espn.com/apis/common/v3/search?query="+encodeURIComponent(nm)+"&type=player&limit=12",useMlbEspnResults2);
+        if(stripped2!==nmL2) fetchJson2("https://site.web.api.espn.com/apis/common/v3/search?query="+encodeURIComponent(stripped2)+"&type=player&limit=12",useMlbEspnResults2);
+        if(cleanedQuery2&&cleanedQuery2.toLowerCase()!==nmL2&&cleanedQuery2.toLowerCase()!==stripped2) fetchJson2("https://site.web.api.espn.com/apis/common/v3/search?query="+encodeURIComponent(cleanedQuery2)+"&type=player&limit=12",useMlbEspnResults2);
         var parts2=nm.trim().split(" ");
         var last2=parts2[parts2.length-1]||"";
         if(/^(jr\.?|sr\.?|ii|iii|iv)$/i.test(last2)&&parts2.length>2) last2=parts2[parts2.length-2];
@@ -4156,15 +4560,15 @@ function RevealedRow(props){
         <div style={{width:96,height:96,position:"relative",flexShrink:0,zIndex:1,
           display:"flex",alignItems:"center",justifyContent:"center"}}>
           {/* Circle container */}
-          <div style={{width:78,height:78,borderRadius:"50%",overflow:"hidden",
-            position:"relative",background:"rgba(255,255,255,0.12)",
+          <div style={{width:82,height:82,borderRadius:"50%",overflow:"hidden",
+            position:"relative",background:"radial-gradient(circle at 32% 28%, rgba(255,255,255,0.18), rgba(255,255,255,0.10) 55%, rgba(0,0,0,0.18) 100%)",
             flexShrink:0}}>
             {teamLogoSrc&&(
               <img src={teamLogoSrc} alt="" style={{
                 position:"absolute",top:"50%",left:"50%",
                 transform:"translate(-50%,-50%)",
-                width:72,height:72,objectFit:"contain",
-                opacity:0.25,filter:"brightness(10) saturate(0)",
+                width:92,height:92,objectFit:"contain",
+                opacity:0.34,filter:"brightness(10) saturate(0)",
                 pointerEvents:"none"}}/>
             )}
             {headshot&&!imgErr?(
@@ -4188,7 +4592,7 @@ function RevealedRow(props){
                 }}
                 style={{position:"absolute",bottom:0,left:"50%",
                   transform:"translateX(-50%)",
-                  height:"130%",width:"auto",maxWidth:"none",
+                  height:"142%",width:"auto",maxWidth:"none",
                   objectFit:"cover",objectPosition:"top center",
                   pointerEvents:"none"}}/>
             ):silhouette}
@@ -4331,6 +4735,155 @@ function UnrevealedRow(props){
 }
 
 // ── MAIN APP ──────────────────────────────────────────────────────────────
+function buildCardUrl(state){
+  if(typeof window==="undefined") return "";
+  var u=new URL(window.location.href);
+  u.searchParams.set("sport",state.sport||"NFL");
+  u.searchParams.set("cat",state.catId||"");
+  if(state.customSpec){
+    u.searchParams.set("mode","custom");
+    try{
+      u.searchParams.set("custom",btoa(unescape(encodeURIComponent(JSON.stringify(state.customSpec)))));
+    }catch(e){}
+    u.searchParams.delete("seed");
+  }else{
+    u.searchParams.delete("mode");
+    u.searchParams.delete("custom");
+    u.searchParams.set("seed",String(state.seed||0));
+  }
+  u.searchParams.set("easy",state.easyMode?"1":"0");
+  return u.toString();
+}
+function decodeCustomSpec(raw){
+  if(!raw) return null;
+  try{
+    return JSON.parse(decodeURIComponent(escape(atob(raw))));
+  }catch(e){
+    return null;
+  }
+}
+function getInitialRouteState(){
+  if(typeof window==="undefined") return {};
+  try{
+    var p=new URLSearchParams(window.location.search||"");
+    var sport=p.get("sport");
+    var catId=p.get("cat");
+    var seed=parseInt(p.get("seed"),10);
+    var easyRaw=p.get("easy");
+    var mode=p.get("mode");
+    var customSpec=mode==="custom"?decodeCustomSpec(p.get("custom")):null;
+    return {
+      sport:SPORT_CATS[sport]?sport:null,
+      catId:catId||null,
+      seed:isNaN(seed)?null:seed,
+      easyMode:easyRaw==="1"?true:easyRaw==="0"?false:null,
+      customSpec:customSpec
+    };
+  }catch(e){
+    return {};
+  }
+}
+function downloadDataUrl(filename,dataUrl){
+  var a=document.createElement("a");
+  a.href=dataUrl;
+  a.download=filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+function ExportBoardRow(props){
+  var row=props.row||{},ans=props.ans||null,cat=props.cat||{},sport=props.sport||"NFL";
+  var filled=!!ans;
+  var displayLogo=(row&&row.c&&row.c.logo)||{};
+  if(row&&row.c&&row.c.q){
+    if(row.c.q.isCollege) displayLogo={type:"college",college:row.c.q.college,sport:sport};
+    else if(row.c.q.isCollegeConf) displayLogo={type:"collegeConf",collegeConf:row.c.q.collegeConf,sport:sport};
+  }
+  if(!filled){
+    var displayYl=formatSeasonRangeLabel(row.yl,sport);
+    var yp=displayYl.indexOf(" to ")>=0?displayYl.split(" to "):null;
+    return (
+      <div style={{marginBottom:8,background:"#232830",borderRadius:10,display:"flex",alignItems:"stretch",minHeight:72}}>
+        <div style={{width:84,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",padding:"0 8px"}}><SportLogo logo={displayLogo} sz={56} sport={sport}/></div>
+        <div style={{width:92,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
+          <div style={{textAlign:"center",color:"white",fontFamily:"Arial Black,sans-serif",fontWeight:900}}>
+            {yp?<div><div style={{fontSize:18}}>{yp[0]}</div><div style={{fontSize:11,color:"#6b7280",fontWeight:400}}>to</div><div style={{fontSize:18}}>{yp[1]}</div></div>:<div style={{fontSize:18}}>{displayYl}</div>}
+          </div>
+        </div>
+        <QualCell q={row.c.q}/>
+      </div>
+    );
+  }
+  var safeName=(typeof ans.nm==="string"&&ans.nm.trim())?ans.nm.trim():"Unknown Player";
+  var parts=safeName.split(" ");
+  var lastName=parts.pop()||"";
+  if(/^(jr\.?|sr\.?|ii|iii|iv)$/i.test(lastName)&&parts.length>1){
+    lastName=(parts.pop()||"")+" "+lastName;
+  }
+  var firstName=parts.join(" ");
+  var nmL=safeName.toLowerCase().trim();
+  var stripped=nmL.replace(/\s+(jr\.?|sr\.?|ii|iii|iv)$/i,"").trim();
+  var espnLookup=(PLAYER_IDS[sport]&&(PLAYER_IDS[sport][nmL]||PLAYER_IDS[sport][stripped]))||null;
+  var headshot=useHeadshot(safeName,sport,espnLookup,ans.id||null);
+  var teamColor=getTeamColor(ans.team,sport);
+  var teamInfo=getTeamMeta(ans.team,sport);
+  var teamLogoSrc=getEspnTeamLogoSrc(sport,ans.team)||getEspnTeamLogoSrc(sport,teamInfo.key)||null;
+  var pctNum=typeof ans.pct==="number"&&isFinite(ans.pct)?ans.pct:0;
+  var st=pctStyle(pctNum);
+  var statUnit=cat&&cat.unit?cat.unit:"";
+  return (
+    <div style={{marginBottom:8,borderRadius:12,overflow:"hidden",position:"relative",height:102,border:"1px solid "+(st.bd||"transparent"),boxShadow:st.shadow||"none"}}>
+      <div style={{position:"absolute",inset:0,background:"linear-gradient(90deg,"+teamColor+" 0%,"+teamColor+"dd 23%,"+teamColor+"66 48%,transparent 76%)",zIndex:0}}/>
+      <div style={{position:"absolute",inset:0,background:st.bg,zIndex:-1}}/>
+      <div style={{position:"absolute",left:10,top:10,width:82,height:82,borderRadius:"50%",overflow:"hidden",background:"radial-gradient(circle at 32% 28%, rgba(255,255,255,0.18), rgba(255,255,255,0.10) 55%, rgba(0,0,0,0.18) 100%)"}}>
+        {teamLogoSrc&&<img src={teamLogoSrc} alt="" style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:92,height:92,objectFit:"contain",opacity:0.34,filter:"brightness(10) saturate(0)"}}/>}
+        {headshot&&<img src={headshot} alt={safeName} style={{position:"absolute",bottom:-4,left:"50%",transform:"translateX(-50%)",height:"142%",width:"auto",objectFit:"cover",objectPosition:"top center"}}/>}
+      </div>
+      <div style={{position:"absolute",left:108,right:132,top:20}}>
+        <div style={{color:"rgba(255,255,255,0.55)",fontFamily:"system-ui,sans-serif",fontSize:9,fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",marginBottom:2}}>{firstName||"\u00A0"}</div>
+        <div style={{color:"#fff",fontFamily:"Arial Black,Impact,sans-serif",fontWeight:900,fontSize:lastName.length>10?24:28,lineHeight:1.02,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{lastName}</div>
+        <div style={{color:"rgba(255,255,255,0.42)",fontFamily:"system-ui,sans-serif",fontSize:10,fontWeight:600,marginTop:5}}>{ans.careerCat?"CAREER":formatSeasonValue(ans.year,sport)}{ans.careerCat?"":" · "+ans.pos}</div>
+      </div>
+      <div style={{position:"absolute",right:14,top:"50%",transform:"translateY(-50%)",display:"flex",flexDirection:"column",alignItems:"flex-end"}}>
+        <div style={{display:"flex",alignItems:"baseline",gap:4}}>
+          <span style={{color:st.vc,fontFamily:"Arial Black,sans-serif",fontWeight:900,fontSize:ans.val>=1000?24:28,lineHeight:1}}>{getStatDisplay(ans.val,cat)}</span>
+          {statUnit&&<span style={{color:st.vc,fontFamily:"Arial Black,sans-serif",fontWeight:900,fontSize:11,opacity:0.9}}>{statUnit}</span>}
+        </div>
+        <div style={{color:st.pc,fontFamily:"system-ui,sans-serif",fontSize:10,fontWeight:700,marginTop:4}}>{pctNum}% OF MAX</div>
+      </div>
+    </div>
+  );
+}
+
+function ExportBoard(props){
+  var sport=props.sport||"NFL",cat=props.cat||{},card=props.card||null,answers=props.answers||[],filled=!!props.filled;
+  var score=props.score||0;
+  var sc=SPORT_COLORS[sport]||SPORT_COLORS.NFL;
+  if(!card) return null;
+  return (
+    <div style={{width:480,background:"#1a1f2b",color:"white",fontFamily:"system-ui,-apple-system,sans-serif",paddingBottom:12}}>
+      <div style={{padding:"10px 16px 6px",background:"#111520",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+        <div>
+          <div style={{fontFamily:"Arial Black,sans-serif",fontWeight:900,fontSize:20,color:"#fff",letterSpacing:-0.5}}>STATPAD <span style={{color:sc.accent}}>FOREVER</span></div>
+          <div style={{fontFamily:"Arial Black,sans-serif",fontWeight:900,fontSize:10,color:"#6b7280",letterSpacing:2,marginTop:2}}>INFINITE</div>
+        </div>
+        <div style={{background:"#2a3040",borderRadius:8,padding:"4px 10px",fontSize:12,fontWeight:700,color:"#9ca3af"}}>SEED #{card.seed}</div>
+      </div>
+      <div style={{display:"flex",alignItems:"flex-end",padding:"8px 16px 8px",gap:8,background:"#111520"}}>
+        <div style={{minWidth:84}}><div style={{fontFamily:"Arial Black,sans-serif",fontWeight:900,fontSize:24,lineHeight:1,color:"white"}}>{cat&&cat.lbl}</div><div style={{color:"#6b7280",fontSize:9,fontWeight:700,letterSpacing:1}}>{cat&&cat.sub}</div></div>
+        <div style={{flex:1,textAlign:"center"}}><div style={{fontFamily:"Arial Black,sans-serif",fontWeight:900,fontSize:34,lineHeight:1,color:sc.accent}}>{score.toLocaleString(undefined,{maximumFractionDigits:1})}</div><div style={{color:"#6b7280",fontSize:9,fontWeight:600,letterSpacing:1}}>SCORE</div></div>
+        <div style={{minWidth:74,textAlign:"right"}}><div style={{fontFamily:"Arial Black,sans-serif",fontWeight:900,fontSize:34,lineHeight:1,color:"white"}}>{filled?answers.filter(Boolean).length:0}/5</div><div style={{color:"#6b7280",fontSize:9,fontWeight:600,letterSpacing:1}}>ANSWERED</div></div>
+      </div>
+      <div style={{padding:"8px 8px 0"}}>
+        {card.rows.map(function(row,i){
+          return <ExportBoardRow key={i} row={row} ans={filled?answers[i]:null} cat={cat} sport={sport}/>;
+        })}
+      </div>
+    </div>
+  );
+}
+
 var BOARD_HISTORY_KEY="tpr_board_history_v5";
 function loadBoardHistory(){
   try{
@@ -4369,22 +4922,238 @@ function loadImportedBoards(){
   }).catch(function(){return [];});
 }
 
+function CustomCardModal(props){
+  var initialSport=props.sport||"NFL";
+  var initialCatId=props.catId||((SPORT_CATS[initialSport]||[])[0]||{}).id||null;
+  var initialSpec=props.initialSpec||null;
+  var [draftSport,setDraftSport]=useState(initialSpec&&initialSpec.sport||initialSport);
+  var [draftCatId,setDraftCatId]=useState(initialSpec&&initialSpec.catId||initialCatId);
+  var [rows,setRows]=useState(function(){
+    if(initialSpec&&Array.isArray(initialSpec.rows)&&initialSpec.rows.length===5) return initialSpec.rows.map(function(r){
+      return {
+        constraintId:r.constraintId||"",
+        startYear:r.startYear!=null?String(r.startYear):"",
+        endYear:r.endYear!=null?String(r.endYear):""
+      };
+    });
+    return Array.from({length:5},function(){return {constraintId:"",startYear:"",endYear:""};});
+  });
+  var options=useMemo(function(){return getViableConstraintOptionsForCat(draftSport,draftCatId);},[draftSport,draftCatId]);
+  var cats=SPORT_CATS[draftSport]||[];
+  var sc=SPORT_COLORS[draftSport]||SPORT_COLORS.NFL;
+  useEffect(function(){
+    setRows(function(prev){
+      return prev.map(function(r){
+        if(!r.constraintId) return r;
+        var ok=options.some(function(o){return o.id===r.constraintId;});
+        return ok?r:{constraintId:"",startYear:r.startYear,endYear:r.endYear};
+      });
+    });
+  },[options]);
+  function updateRow(idx,key,val){
+    setRows(function(prev){
+      var next=prev.slice();
+      next[idx]=Object.assign({},next[idx],{[key]:val});
+      return next;
+    });
+  }
+  function submit(){
+    if(rows.some(function(r){return !r.constraintId;})){
+      props.onError&&props.onError("Choose a row type for all 5 rows");
+      return;
+    }
+    props.onSave({
+      sport:draftSport,
+      catId:draftCatId,
+      rows:rows.map(function(r){
+        return {
+          constraintId:r.constraintId,
+          startYear:r.startYear?parseInt(r.startYear,10):null,
+          endYear:r.endYear?parseInt(r.endYear,10):null
+        };
+      })
+    });
+  }
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.82)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:80,padding:16}}>
+      <div style={{width:"100%",maxWidth:460,background:"#1f2430",borderRadius:18,border:"1px solid #374151",overflow:"hidden",maxHeight:"90vh",display:"flex",flexDirection:"column"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px",borderBottom:"1px solid #2f3746"}}>
+          <div>
+            <div style={{color:"#fff",fontFamily:"Arial Black,sans-serif",fontSize:20,lineHeight:1}}>CUSTOM CARD</div>
+            <div style={{color:"#9ca3af",fontSize:11,fontWeight:600,marginTop:4}}>Pick a sport, stat, and 5 row constraints. Shared links open the exact card.</div>
+          </div>
+          <button onClick={props.onClose} style={{background:"transparent",border:"none",color:"#9ca3af",fontSize:28,cursor:"pointer",lineHeight:1}}>×</button>
+        </div>
+        <div style={{padding:16,overflowY:"auto",display:"flex",flexDirection:"column",gap:12}}>
+          <div style={{display:"flex",gap:8}}>
+            <select value={draftSport} onChange={function(e){
+              var nextSport=e.target.value;
+              var nextCats=SPORT_CATS[nextSport]||[];
+              setDraftSport(nextSport);
+              setDraftCatId((nextCats[0]||{}).id||"");
+              setRows(Array.from({length:5},function(){return {constraintId:"",startYear:"",endYear:""};}));
+            }} style={{flex:1,background:"#2a3040",border:"1px solid #374151",borderRadius:10,padding:"10px 12px",color:"white",fontSize:13}}>
+              {["NFL","NBA","MLB","NHL"].map(function(s){return <option key={s} value={s}>{s}</option>;})}
+            </select>
+            <select value={draftCatId||""} onChange={function(e){
+              setDraftCatId(e.target.value);
+              setRows(Array.from({length:5},function(){return {constraintId:"",startYear:"",endYear:""};}));
+            }} style={{flex:1.3,background:"#2a3040",border:"1px solid #374151",borderRadius:10,padding:"10px 12px",color:"white",fontSize:13}}>
+              {cats.map(function(c){return <option key={c.id} value={c.id}>{c.lbl} {c.sub}</option>;})}
+            </select>
+          </div>
+          <div style={{color:"#6b7280",fontSize:11,fontWeight:700,letterSpacing:1}}>ROWS</div>
+          {rows.map(function(r,idx){
+            return (
+              <div key={idx} style={{background:"#232830",border:"1px solid #374151",borderRadius:12,padding:10,display:"flex",flexDirection:"column",gap:8}}>
+                <div style={{color:"#9ca3af",fontSize:11,fontWeight:700}}>Row {idx+1}</div>
+                <select value={r.constraintId} onChange={function(e){updateRow(idx,"constraintId",e.target.value);}} style={{background:"#2a3040",border:"1px solid #374151",borderRadius:8,padding:"9px 10px",color:"white",fontSize:13}}>
+                  <option value="">Select team / qualification / league row</option>
+                  {options.map(function(o){return <option key={o.id} value={o.id}>{o.label}</option>;})}
+                </select>
+                <div style={{display:"flex",gap:8}}>
+                  <input value={r.startYear} onChange={function(e){updateRow(idx,"startYear",e.target.value.replace(/[^0-9]/g,""));}} placeholder="Start year (optional)" style={{flex:1,background:"#2a3040",border:"1px solid #374151",borderRadius:8,padding:"9px 10px",color:"white",fontSize:13,outline:"none"}}/>
+                  <input value={r.endYear} onChange={function(e){updateRow(idx,"endYear",e.target.value.replace(/[^0-9]/g,""));}} placeholder="End year (optional)" style={{flex:1,background:"#2a3040",border:"1px solid #374151",borderRadius:8,padding:"9px 10px",color:"white",fontSize:13,outline:"none"}}/>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <div style={{padding:16,borderTop:"1px solid #2f3746",display:"flex",gap:8}}>
+          <button onClick={props.onClose} style={{flex:1,background:"#2a3040",border:"none",borderRadius:10,padding:"11px",color:"#9ca3af",fontWeight:700,cursor:"pointer"}}>Cancel</button>
+          <button onClick={submit} style={{flex:1,background:sc.primary,border:"1px solid "+sc.accent,borderRadius:10,padding:"11px",color:sc.accent,fontWeight:700,cursor:"pointer"}}>Build Card</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TeamBoardModal(props){
+  var initialSport=props.sport||"NFL";
+  var initialCatId=props.catId||((SPORT_CATS[initialSport]||[])[0]||{}).id||null;
+  var initialSpec=props.initialSpec&&props.initialSpec.customMode==="team"?props.initialSpec:null;
+  var [draftSport,setDraftSport]=useState(initialSpec&&initialSpec.sport||initialSport);
+  var [draftCatId,setDraftCatId]=useState(initialSpec&&initialSpec.catId||initialCatId);
+  var [rows,setRows]=useState(function(){
+    if(initialSpec&&Array.isArray(initialSpec.rows)&&initialSpec.rows.length===5) return initialSpec.rows.map(function(r){
+      return {
+        team:r.team||"",
+        qualifierId:r.qualifierId||"",
+        startYear:r.startYear!=null?String(r.startYear):"",
+        endYear:r.endYear!=null?String(r.endYear):""
+      };
+    });
+    return Array.from({length:5},function(){return {team:"",qualifierId:"",startYear:"",endYear:""};});
+  });
+  var cats=SPORT_CATS[draftSport]||[];
+  var sc=SPORT_COLORS[draftSport]||SPORT_COLORS.NFL;
+  var teamOptions=useMemo(function(){return getTeamOptionsForCat(draftSport,draftCatId);},[draftSport,draftCatId]);
+  var qualOptions=useMemo(function(){return getTeamQualificationOptionsForCat(draftSport,draftCatId);},[draftSport,draftCatId]);
+  function resetRows(){
+    setRows(Array.from({length:5},function(){return {team:"",qualifierId:"",startYear:"",endYear:""};}));
+  }
+  function updateRow(idx,key,val){
+    setRows(function(prev){
+      var next=prev.slice();
+      next[idx]=Object.assign({},next[idx],{[key]:val});
+      return next;
+    });
+  }
+  function submit(){
+    if(rows.some(function(r){return !r.team;})){
+      props.onError&&props.onError("Choose a team for all 5 rows");
+      return;
+    }
+    props.onSave({
+      sport:draftSport,
+      catId:draftCatId,
+      customMode:"team",
+      rows:rows.map(function(r){
+        return {
+          team:r.team,
+          qualifierId:r.qualifierId||"",
+          startYear:r.startYear?parseInt(r.startYear,10):null,
+          endYear:r.endYear?parseInt(r.endYear,10):null
+        };
+      })
+    });
+  }
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.82)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:80,padding:16}}>
+      <div style={{width:"100%",maxWidth:460,background:"#1f2430",borderRadius:18,border:"1px solid #374151",overflow:"hidden",maxHeight:"90vh",display:"flex",flexDirection:"column"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px",borderBottom:"1px solid #2f3746"}}>
+          <div>
+            <div style={{color:"#fff",fontFamily:"Arial Black,sans-serif",fontSize:20,lineHeight:1}}>TEAM BOARD</div>
+            <div style={{color:"#9ca3af",fontSize:11,fontWeight:600,marginTop:4}}>Pick teams, eras, and optional qualifications. Shared links open the exact board.</div>
+          </div>
+          <button onClick={props.onClose} style={{background:"transparent",border:"none",color:"#9ca3af",fontSize:28,cursor:"pointer",lineHeight:1}}>×</button>
+        </div>
+        <div style={{padding:16,overflowY:"auto",display:"flex",flexDirection:"column",gap:12}}>
+          <div style={{display:"flex",gap:8}}>
+            <select value={draftSport} onChange={function(e){
+              var nextSport=e.target.value;
+              var nextCats=SPORT_CATS[nextSport]||[];
+              setDraftSport(nextSport);
+              setDraftCatId((nextCats[0]||{}).id||"");
+              resetRows();
+            }} style={{flex:1,background:"#2a3040",border:"1px solid #374151",borderRadius:10,padding:"10px 12px",color:"white",fontSize:13}}>
+              {["NFL","NBA","MLB","NHL"].map(function(s){return <option key={s} value={s}>{s}</option>;})}
+            </select>
+            <select value={draftCatId||""} onChange={function(e){setDraftCatId(e.target.value);resetRows();}} style={{flex:1.3,background:"#2a3040",border:"1px solid #374151",borderRadius:10,padding:"10px 12px",color:"white",fontSize:13}}>
+              {cats.map(function(c){return <option key={c.id} value={c.id}>{c.lbl} {c.sub}</option>;})}
+            </select>
+          </div>
+          {rows.map(function(r,idx){
+            return <div key={idx} style={{background:"#232830",border:"1px solid #374151",borderRadius:12,padding:10,display:"flex",flexDirection:"column",gap:8}}>
+              <div style={{color:"#9ca3af",fontSize:11,fontWeight:700}}>Row {idx+1}</div>
+              <select value={r.team} onChange={function(e){updateRow(idx,"team",e.target.value);}} style={{background:"#2a3040",border:"1px solid #374151",borderRadius:8,padding:"9px 10px",color:"white",fontSize:13}}>
+                <option value="">Select team</option>
+                {teamOptions.map(function(o){return <option key={o.id} value={o.id}>{o.label}</option>;})}
+              </select>
+              <select value={r.qualifierId} onChange={function(e){updateRow(idx,"qualifierId",e.target.value);}} style={{background:"#2a3040",border:"1px solid #374151",borderRadius:8,padding:"9px 10px",color:"white",fontSize:13}}>
+                {qualOptions.map(function(o){return <option key={o.id||"none"} value={o.id}>{o.label}</option>;})}
+              </select>
+              <div style={{display:"flex",gap:8}}>
+                <input value={r.startYear} onChange={function(e){updateRow(idx,"startYear",e.target.value.replace(/[^0-9]/g,""));}} placeholder="Start year (optional)" style={{flex:1,background:"#2a3040",border:"1px solid #374151",borderRadius:8,padding:"9px 10px",color:"white",fontSize:13,outline:"none"}}/>
+                <input value={r.endYear} onChange={function(e){updateRow(idx,"endYear",e.target.value.replace(/[^0-9]/g,""));}} placeholder="End year (optional)" style={{flex:1,background:"#2a3040",border:"1px solid #374151",borderRadius:8,padding:"9px 10px",color:"white",fontSize:13,outline:"none"}}/>
+              </div>
+            </div>;
+          })}
+        </div>
+        <div style={{padding:16,borderTop:"1px solid #2f3746",display:"flex",gap:8}}>
+          <button onClick={props.onClose} style={{flex:1,background:"#2a3040",border:"none",borderRadius:10,padding:"11px",color:"#9ca3af",fontWeight:700,cursor:"pointer"}}>Cancel</button>
+          <button onClick={submit} style={{flex:1,background:sc.primary,border:"1px solid "+sc.accent,borderRadius:10,padding:"11px",color:sc.accent,fontWeight:700,cursor:"pointer"}}>Build Team Board</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function App(){
+  var routeInit=useMemo(function(){return getInitialRouteState();},[]);
   useEffect(function(){initLiveDB();},[]);
-  var [sport,setSport]=useState("NFL");
-  var [seed,setSeed]=useState(function(){return Math.floor(Math.random()*999999);});
-  var [catId,setCatId]=useState(null);
+  var [sport,setSport]=useState(routeInit.sport||"NFL");
+  var [seed,setSeed]=useState(function(){return routeInit.seed!=null?routeInit.seed:Math.floor(Math.random()*999999);});
+  var [catId,setCatId]=useState(routeInit.catId||null);
+  var [customSpec,setCustomSpec]=useState(routeInit.customSpec||null);
   var [card,setCard]=useState(null);
   var [answers,setAnswers]=useState([null,null,null,null,null]);
   var [shareMsg,setShareMsg]=useState("");
   var [loadVal,setLoadVal]=useState("");
   var [showLoad,setShowLoad]=useState(false);
+  var [showCustom,setShowCustom]=useState(false);
+  var [showTeamBuilder,setShowTeamBuilder]=useState(false);
   var [modalIdx,setModalIdx]=useState(null);
-  var [easyMode,setEasyMode]=useState(function(){try{return localStorage.getItem("tpr_easy_mode")==="1";}catch(e){return false;}});
+  var [easyMode,setEasyMode]=useState(function(){
+    if(routeInit.easyMode!=null) return routeInit.easyMode;
+    try{return localStorage.getItem("tpr_easy_mode")==="1";}catch(e){return false;}
+  });
   var [showBoards,setShowBoards]=useState(false);
   var [boardHistory,setBoardHistory]=useState(function(){return loadBoardHistory();});
   var [importedBoards,setImportedBoards]=useState([]);
   var [showWelcome,setShowWelcome]=useState(true);
+  var blankExportRef=useRef(null);
+  var filledExportRef=useRef(null);
 
   var cats=useMemo(function(){return SPORT_CATS[sport]||NFL_CATS;},[sport]);
   var activeCatId=catId||(cats[0]&&cats[0].id);
@@ -4401,6 +5170,7 @@ export default function App(){
     var nextCatId=randomCatIdForSport(chosenSport);
     setShowLoad(false);
     setShowBoards(false);
+    setCustomSpec(null);
     if(chosenSport!==sport) setSport(chosenSport);
     setCatId(nextCatId);
     setSeed(Math.floor(Math.random()*999999));
@@ -4410,7 +5180,10 @@ export default function App(){
     setShowWelcome(false);
   }
 
-  useEffect(function(){setCatId(null);},[sport]);
+  useEffect(function(){
+    if(customSpec&&customSpec.sport===sport) return;
+    setCatId(null);
+  },[sport]);
   useEffect(function(){ensureLiveDB(sport);},[sport]);
   useEffect(function(){loadImportedBoards().then(setImportedBoards);},[]);
 
@@ -4419,6 +5192,11 @@ export default function App(){
     var liveData=getLiveSportData(sport);
     if(!liveData||!liveData.players||!liveData.players.length){
       setCard(null);setAnswers([null,null,null,null,null]);
+      return;
+    }
+    if(customSpec&&customSpec.sport===sport&&customSpec.catId===cat.id){
+      var customCard=customSpec.customMode==="team"?makeTeamCard(customSpec):makeCustomCard(customSpec);
+      setCard(customCard);setAnswers([null,null,null,null,null]);
       return;
     }
     var c=null,s=seed,t=0;
@@ -4444,10 +5222,15 @@ export default function App(){
         createdAt:Date.now()
       }));
     }
-  },[seed,activeCatId,sport,dbStatus,cats,cat]);
+  },[seed,activeCatId,sport,dbStatus,cats,cat,customSpec]);
   useEffect(function(){
     try{localStorage.setItem("tpr_easy_mode",easyMode?"1":"0");}catch(e){}
   },[easyMode]);
+  useEffect(function(){
+    if(typeof window==="undefined"||!activeCatId) return;
+    var nextUrl=buildCardUrl({sport:sport,catId:activeCatId,seed:card&&card.seed?card.seed:seed,easyMode:easyMode,customSpec:customSpec});
+    try{window.history.replaceState(null,"",nextUrl);}catch(e){}
+  },[sport,activeCatId,seed,easyMode,card,customSpec]);
 
   var score=answers.reduce(function(a,r){return a+(r?r.val:0);},0);
   var guesses=answers.filter(Boolean).length;
@@ -4456,10 +5239,64 @@ export default function App(){
   function onGuess(i,d){setAnswers(function(prev){var n=prev.slice();n[i]=d;return n;});}
   function doShare(){
     var shareSeed=card&&card.seed?card.seed:seed;
-    var txt="Statpad Forever | "+sport+" | "+(cat&&cat.lbl)+" "+(cat&&cat.sub)+" | Card Seed #"+shareSeed+" | Score: "+score.toLocaleString(undefined,{maximumFractionDigits:1});
+    var link=buildCardUrl({sport:sport,catId:activeCatId,seed:shareSeed,easyMode:easyMode,customSpec:customSpec});
+    var label=customSpec?(customSpec.customMode==="team"?"Team Board":"Custom Card"):"Card Seed #"+shareSeed;
+    var txt="Statpad Forever | "+sport+" | "+(cat&&cat.lbl)+" "+(cat&&cat.sub)+" | "+label+" | Score: "+score.toLocaleString(undefined,{maximumFractionDigits:1})+" | "+link;
     navigator.clipboard.writeText(txt).then(function(){setShareMsg("Copied!");setTimeout(function(){setShareMsg("");},2000);});
   }
-  function doLoad(){var n=parseInt(loadVal);if(!isNaN(n)){setSeed(n);setShowLoad(false);setLoadVal("");}}
+  function saveImage(kind){
+    var target=kind==="blank"?blankExportRef.current:filledExportRef.current;
+    if(!target||!card) return;
+    setShareMsg("Saving image...");
+    window.setTimeout(function(){
+      htmlToImage.toPng(target,{cacheBust:true,pixelRatio:2,backgroundColor:"#1a1f2b"})
+        .then(function(dataUrl){
+          var fileSport=(sport||"sport").toLowerCase();
+          var fileCat=((activeCatId||"card")+"").replace(/[^a-z0-9_-]/gi,"-");
+          var fileSeed=(card&&card.seed)||seed;
+          downloadDataUrl("statpad-forever-"+fileSport+"-"+fileCat+"-"+fileSeed+"-"+kind+".png",dataUrl);
+          setShareMsg(kind==="blank"?"Blank card saved":"Filled card saved");
+          setTimeout(function(){setShareMsg("");},2200);
+        })
+        .catch(function(){
+          setShareMsg("Save failed");
+          setTimeout(function(){setShareMsg("");},2200);
+        });
+    },700);
+  }
+  function doLoad(){var n=parseInt(loadVal);if(!isNaN(n)){setCustomSpec(null);setSeed(n);setShowLoad(false);setLoadVal("");}}
+  function openCustomBuilder(){setShowLoad(false);setShowBoards(false);setShowTeamBuilder(false);setShowCustom(true);}
+  function openTeamBoardBuilder(){setShowLoad(false);setShowBoards(false);setShowCustom(false);setShowTeamBuilder(true);}
+  function saveCustomBuilder(spec){
+    var built=makeCustomCard(spec);
+    if(!built){
+      setShareMsg("Custom card needs 7 eligible results in each row");
+      setTimeout(function(){setShareMsg("");},2400);
+      return;
+    }
+    setSport(spec.sport);
+    setCatId(spec.catId);
+    setCustomSpec(spec);
+    setShowCustom(false);
+    setShowTeamBuilder(false);
+    setModalIdx(null);
+    setAnswers([null,null,null,null,null]);
+  }
+  function saveTeamBuilder(spec){
+    var built=makeTeamCard(spec);
+    if(!built){
+      setShareMsg("Team board needs 7 eligible results in each row");
+      setTimeout(function(){setShareMsg("");},2400);
+      return;
+    }
+    setSport(spec.sport);
+    setCatId(spec.catId);
+    setCustomSpec(spec);
+    setShowCustom(false);
+    setShowTeamBuilder(false);
+    setModalIdx(null);
+    setAnswers([null,null,null,null,null]);
+  }
 
   return (
     <div style={{minHeight:"100vh",background:"#1a1f2b",color:"white",fontFamily:"system-ui,-apple-system,sans-serif",maxWidth:480,margin:"0 auto"}}>
@@ -4469,7 +5306,7 @@ export default function App(){
       <div style={{display:"flex",gap:2,padding:"8px 8px 0",background:"#111520"}}>
         {["NFL","NBA","MLB","NHL"].map(function(s){
           var active=s===sport;var c2=SPORT_COLORS[s];
-          return <button key={s} onClick={function(){setSport(s);setCatId(null);setSeed(Math.floor(Math.random()*999999));}} style={{flex:1,padding:"10px 0",background:active?c2.primary:"#1a1f2b",border:"none",borderBottom:active?"2px solid "+c2.accent:"2px solid transparent",color:active?c2.accent:"#6b7280",fontFamily:"Arial Black,sans-serif",fontWeight:900,fontSize:16,cursor:"pointer",borderRadius:"6px 6px 0 0",transition:"all 0.15s"}}>{s}</button>;
+          return <button key={s} onClick={function(){setCustomSpec(null);setSport(s);setCatId(null);setSeed(Math.floor(Math.random()*999999));}} style={{flex:1,padding:"10px 0",background:active?c2.primary:"#1a1f2b",border:"none",borderBottom:active?"2px solid "+c2.accent:"2px solid transparent",color:active?c2.accent:"#6b7280",fontFamily:"Arial Black,sans-serif",fontWeight:900,fontSize:16,cursor:"pointer",borderRadius:"6px 6px 0 0",transition:"all 0.15s"}}>{s}</button>;
         })}
       </div>
 
@@ -4481,7 +5318,7 @@ export default function App(){
         </div>
         <div style={{display:"flex",gap:6,alignItems:"center"}}>
           <DBStatusBadge sport={sport}/>
-          <div style={{background:"#2a3040",borderRadius:8,padding:"4px 10px",fontSize:12,fontWeight:700,color:"#9ca3af",fontFamily:"system-ui,sans-serif"}}>SEED #{card&&card.seed}</div>
+          <div style={{background:"#2a3040",borderRadius:8,padding:"4px 10px",fontSize:12,fontWeight:700,color:"#9ca3af",fontFamily:"system-ui,sans-serif"}}>{customSpec?(customSpec.customMode==="team"?"TEAM BOARD":"CUSTOM"):"SEED #"+(card&&card.seed)}</div>
         </div>
       </div>
 
@@ -4505,43 +5342,58 @@ export default function App(){
           );
         })}
         {modalIdx!==null&&card&&<ModalComp row={card.rows[modalIdx]} cat={cat} sport={sport} easyMode={easyMode} onClose={function(){setModalIdx(null);}} onSuccess={function(d){setModalIdx(null);onGuess(modalIdx,d);}}/>}
+        {showCustom&&<CustomCardModal sport={sport} catId={activeCatId} initialSpec={customSpec} onClose={function(){setShowCustom(false);}} onSave={saveCustomBuilder} onError={function(msg){setShareMsg(msg);setTimeout(function(){setShareMsg("");},2200);}}/>}
+        {showTeamBuilder&&<TeamBoardModal sport={sport} catId={activeCatId} initialSpec={customSpec} onClose={function(){setShowTeamBuilder(false);}} onSave={saveTeamBuilder} onError={function(msg){setShareMsg(msg);setTimeout(function(){setShareMsg("");},2200);}}/>}
       </div>
 
       {/* Controls */}
       <div style={{display:"flex",gap:8,padding:"4px 8px 2px"}}>
-        <button onClick={function(){setSeed(Math.floor(Math.random()*999999));}} style={{flex:1,background:"#2a3040",border:"none",borderRadius:20,padding:"8px",color:"#ef4444",fontWeight:700,cursor:"pointer",fontFamily:"system-ui,sans-serif",fontSize:12}}>! GIVE UP</button>
+        <button onClick={function(){setCustomSpec(null);setSeed(Math.floor(Math.random()*999999));}} style={{flex:1,background:"#2a3040",border:"none",borderRadius:20,padding:"8px",color:"#ef4444",fontWeight:700,cursor:"pointer",fontFamily:"system-ui,sans-serif",fontSize:12}}>! GIVE UP</button>
         <button onClick={function(){setShowLoad(function(v){return !v;});setShowBoards(false);}} style={{flex:1,background:"#2a3040",border:"none",borderRadius:20,padding:"8px",color:"#9ca3af",fontWeight:700,cursor:"pointer",fontFamily:"system-ui,sans-serif",fontSize:12}}>? LOAD SEED</button>
       </div>
       <div style={{display:"flex",gap:8,padding:"0 8px 2px"}}>
         <button onClick={function(){setEasyMode(function(v){return !v;});}} style={{flex:1,background:easyMode?sc.primary:"#2a3040",border:easyMode?"1px solid "+sc.accent:"none",borderRadius:20,padding:"8px",color:easyMode?sc.accent:"#9ca3af",fontWeight:700,cursor:"pointer",fontFamily:"system-ui,sans-serif",fontSize:12}}>EASY MODE {easyMode?"ON":"OFF"}</button>
         <button onClick={function(){setShowBoards(function(v){return !v;});setShowLoad(false);setBoardHistory(loadBoardHistory());}} style={{flex:1,background:"#2a3040",border:"none",borderRadius:20,padding:"8px",color:"#9ca3af",fontWeight:700,cursor:"pointer",fontFamily:"system-ui,sans-serif",fontSize:12}}>PAST BOARDS</button>
       </div>
+      <div style={{display:"flex",gap:8,padding:"0 8px 2px"}}>
+        <button onClick={openCustomBuilder} style={{flex:1,background:customSpec?sc.primary:"#2a3040",border:customSpec?"1px solid "+sc.accent:"none",borderRadius:20,padding:"8px",color:customSpec?sc.accent:"#9ca3af",fontWeight:700,cursor:"pointer",fontFamily:"system-ui,sans-serif",fontSize:12}}>{customSpec?"EDIT CUSTOM CARD":"CUSTOM CARD"}</button>
+      </div>
+      <div style={{display:"flex",gap:8,padding:"0 8px 2px"}}>
+        <button onClick={openTeamBoardBuilder} style={{flex:1,background:customSpec&&customSpec.customMode==="team"?sc.primary:"#2a3040",border:customSpec&&customSpec.customMode==="team"?"1px solid "+sc.accent:"none",borderRadius:20,padding:"8px",color:customSpec&&customSpec.customMode==="team"?sc.accent:"#9ca3af",fontWeight:700,cursor:"pointer",fontFamily:"system-ui,sans-serif",fontSize:12}}>{customSpec&&customSpec.customMode==="team"?"EDIT TEAM BOARD":"TEAM BOARD"}</button>
+      </div>
       {showLoad&&<div style={{padding:"6px 8px",display:"flex",gap:8,alignItems:"center"}}><input value={loadVal} onChange={function(e){setLoadVal(e.target.value);}} onKeyDown={function(e){if(e.key==="Enter")doLoad();}} placeholder="Enter seed number..." style={{flex:1,background:"#2a3040",border:"1px solid #374151",borderRadius:8,padding:"8px 12px",color:"white",fontFamily:"system-ui,sans-serif",fontSize:13,outline:"none"}}/><button onClick={doLoad} style={{background:"#22c55e",border:"none",borderRadius:8,padding:"8px 14px",color:"white",fontWeight:700,cursor:"pointer",fontFamily:"system-ui,sans-serif",fontSize:13}}>GO</button></div>}
       {showBoards&&<div style={{padding:"6px 8px",display:"flex",flexDirection:"column",gap:6,maxHeight:300,overflowY:"auto"}}>
         <div style={{color:"#6b7280",fontSize:11,fontWeight:700,letterSpacing:1,fontFamily:"system-ui,sans-serif",padding:"2px 2px 0"}}>GENERATED</div>
         {boardHistory.filter(function(b){return b.sport===sport;}).length===0?<div style={{background:"#232830",borderRadius:8,padding:"10px 12px",color:"#9ca3af",fontSize:12,fontFamily:"system-ui,sans-serif"}}>No saved generated boards for {sport} yet.</div>:boardHistory.filter(function(b){return b.sport===sport;}).map(function(b){
-          return <button key={b.id} onClick={function(){setSport(b.sport);setCatId(b.catId);setSeed(b.seed);setShowBoards(false);}} style={{background:"#232830",border:"1px solid #374151",borderRadius:8,padding:"10px 12px",color:"white",cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center",fontFamily:"system-ui,sans-serif",fontSize:12}}>
+          return <button key={b.id} onClick={function(){setCustomSpec(null);setSport(b.sport);setCatId(b.catId);setSeed(b.seed);setShowBoards(false);}} style={{background:"#232830",border:"1px solid #374151",borderRadius:8,padding:"10px 12px",color:"white",cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center",fontFamily:"system-ui,sans-serif",fontSize:12}}>
             <span>{b.catLbl} {b.catSub} - Seed {b.seed}</span>
             <span style={{color:"#6b7280"}}>{new Date(b.createdAt).toLocaleDateString()}</span>
           </button>;
         })}
         <div style={{color:"#6b7280",fontSize:11,fontWeight:700,letterSpacing:1,fontFamily:"system-ui,sans-serif",padding:"8px 2px 0"}}>ARCHIVE</div>
         {importedBoards.filter(function(b){return b.sport===sport;}).length===0?<div style={{background:"#232830",borderRadius:8,padding:"10px 12px",color:"#9ca3af",fontSize:12,fontFamily:"system-ui,sans-serif"}}>No imported archive boards for {sport}.</div>:importedBoards.filter(function(b){return b.sport===sport;}).map(function(b){
-          return <button key={b.id} onClick={function(){setSport(b.sport);setCatId(b.catId);setSeed(b.seed);setShowBoards(false);}} style={{background:"#232830",border:"1px solid #374151",borderRadius:8,padding:"10px 12px",color:"white",cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center",fontFamily:"system-ui,sans-serif",fontSize:12}}>
+          return <button key={b.id} onClick={function(){setCustomSpec(null);setSport(b.sport);setCatId(b.catId);setSeed(b.seed);setShowBoards(false);}} style={{background:"#232830",border:"1px solid #374151",borderRadius:8,padding:"10px 12px",color:"white",cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center",fontFamily:"system-ui,sans-serif",fontSize:12}}>
             <span>{b.category||"Board"} - Seed {b.seed}</span>
             <span style={{color:"#6b7280"}}>Play</span>
           </button>;
         })}
       </div>}
 
-      {/* Category tabs */}
-      <div style={{display:"flex",gap:4,padding:"6px 8px 4px",overflowX:"auto",flexWrap:"nowrap"}}>
-        {cats.map(function(c){return <button key={c.id} onClick={function(){setCatId(c.id);}} style={{background:c.id===activeCatId?sc.primary:"#2a3040",border:c.id===activeCatId?"1px solid "+sc.accent:"1px solid transparent",borderRadius:8,padding:"5px 10px",color:c.id===activeCatId?sc.accent:"#9ca3af",fontFamily:"Arial Black,sans-serif",fontWeight:900,fontSize:11,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0}}>{c.lbl} {c.sub}</button>;})}</div>
+      {/* Category selector */}
+      <div style={{padding:"6px 8px 4px"}}>
+        <select value={activeCatId||""} onChange={function(e){setCustomSpec(null);setCatId(e.target.value);}} style={{width:"100%",background:"#2a3040",border:"1px solid #374151",borderRadius:10,padding:"10px 12px",color:"white",fontSize:13,fontWeight:700,outline:"none"}}>
+          {cats.map(function(c){return <option key={c.id} value={c.id}>{c.lbl} {c.sub}</option>;})}
+        </select>
+      </div>
 
       {/* Bottom buttons */}
       <div style={{display:"flex",gap:8,padding:"4px 8px 8px"}}>
         <button onClick={function(){newRandomCard();}} style={{flex:1,background:"#2a3040",border:"none",borderRadius:10,padding:"10px",color:"white",fontWeight:700,cursor:"pointer",fontFamily:"system-ui,sans-serif",fontSize:14}}>New Card</button>
-        <button onClick={doShare} style={{flex:1,background:sc.primary,border:"1px solid "+sc.accent,borderRadius:10,padding:"10px",color:sc.accent,fontWeight:700,cursor:"pointer",fontFamily:"system-ui,sans-serif",fontSize:14}}>Share</button>
+        <button onClick={doShare} style={{flex:1,background:sc.primary,border:"1px solid "+sc.accent,borderRadius:10,padding:"10px",color:sc.accent,fontWeight:700,cursor:"pointer",fontFamily:"system-ui,sans-serif",fontSize:14}}>{customSpec?"Share Link":"Share"}</button>
+      </div>
+      <div style={{display:"flex",gap:8,padding:"0 8px 8px"}}>
+        <button onClick={function(){saveImage("blank");}} disabled={!card} style={{flex:1,background:"#2a3040",border:"1px solid #374151",borderRadius:10,padding:"10px",color:"white",fontWeight:700,cursor:card?"pointer":"default",opacity:card?1:0.5,fontFamily:"system-ui,sans-serif",fontSize:13}}>Save Blank</button>
+        <button onClick={function(){saveImage("filled");}} disabled={!card} style={{flex:1,background:"#2a3040",border:"1px solid #374151",borderRadius:10,padding:"10px",color:"white",fontWeight:700,cursor:card?"pointer":"default",opacity:card?1:0.5,fontFamily:"system-ui,sans-serif",fontSize:13}}>Save Filled</button>
       </div>
       <div style={{padding:"0 8px 14px"}}>
         <div style={{background:"#232830",borderRadius:10,padding:"10px 12px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:10}}>
@@ -4550,6 +5402,10 @@ export default function App(){
         </div>
       </div>
       {shareMsg&&<div style={{textAlign:"center",color:"#22c55e",fontSize:13,fontWeight:600,paddingBottom:8}}>{shareMsg}</div>}
+      <div style={{position:"fixed",left:-99999,top:0,opacity:0,pointerEvents:"none"}}>
+        <div ref={blankExportRef}><ExportBoard sport={sport} cat={cat} card={card} answers={[null,null,null,null,null]} score={0} filled={false}/></div>
+        <div ref={filledExportRef}><ExportBoard sport={sport} cat={cat} card={card} answers={answers} score={score} filled={true}/></div>
+      </div>
       {showWelcome&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.82)",zIndex:1200,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
         <div style={{width:"100%",maxWidth:430,background:"#111520",border:"1px solid #252d3f",borderRadius:18,padding:"22px 18px 18px",boxShadow:"0 24px 60px rgba(0,0,0,0.45)"}}>
               <div style={{fontFamily:"Arial Black,sans-serif",fontWeight:900,fontSize:24,lineHeight:1.05,color:"white"}}>Welcome to Statpad Forever!</div>
@@ -4563,7 +5419,7 @@ export default function App(){
         </div>
       </div>}
 
-      {done&&<div style={{margin:"0 8px 16px",background:"linear-gradient(135deg,#052e16,#0d4a22)",borderRadius:12,padding:"16px",textAlign:"center",border:"1px solid #22c55e"}}><div style={{fontSize:24,fontWeight:900,fontFamily:"Arial Black,sans-serif",color:"white"}}>COMPLETE! 🎉</div><div style={{fontSize:14,marginTop:6,color:"#d1fae5"}}>Score: <strong style={{fontSize:20}}>{score.toLocaleString(undefined,{maximumFractionDigits:1})}</strong></div><div style={{color:"#4ade80",fontSize:11,marginTop:4,letterSpacing:1}}>SEED #{seed} · {sport} · {cat&&cat.lbl}</div></div>}
+      {done&&<div style={{margin:"0 8px 16px",background:"linear-gradient(135deg,#052e16,#0d4a22)",borderRadius:12,padding:"16px",textAlign:"center",border:"1px solid #22c55e"}}><div style={{fontSize:24,fontWeight:900,fontFamily:"Arial Black,sans-serif",color:"white"}}>COMPLETE!</div><div style={{fontSize:14,marginTop:6,color:"#d1fae5"}}>Score: <strong style={{fontSize:20}}>{score.toLocaleString(undefined,{maximumFractionDigits:1})}</strong></div><div style={{color:"#4ade80",fontSize:11,marginTop:4,letterSpacing:1}}>{customSpec?(customSpec.customMode==="team"?"TEAM BOARD":"CUSTOM CARD"):"SEED #"+(card&&card.seed?card.seed:seed)} · {sport} · {cat&&cat.lbl}</div></div>}
     </div>
   );
 }
