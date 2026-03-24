@@ -4556,19 +4556,18 @@ function RevealedRow(props){
           zIndex:0}}/>
         <div style={{position:"absolute",inset:0,background:st.bg,zIndex:-1}}/>
 
-        {/* Left square: circle with logo watermark + headshot/silhouette */}
+        {/* Left panel: large logo watermark with uncropped headshot overlay */}
         <div style={{width:96,height:96,position:"relative",flexShrink:0,zIndex:1,
           display:"flex",alignItems:"center",justifyContent:"center"}}>
-          {/* Circle container */}
-          <div style={{width:82,height:82,borderRadius:"50%",overflow:"hidden",
-            position:"relative",background:"radial-gradient(circle at 32% 28%, rgba(255,255,255,0.18), rgba(255,255,255,0.10) 55%, rgba(0,0,0,0.18) 100%)",
+          <div style={{width:86,height:86,borderRadius:12,overflow:"visible",
+            position:"relative",background:"linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04))",
             flexShrink:0}}>
             {teamLogoSrc&&(
               <img src={teamLogoSrc} alt="" style={{
                 position:"absolute",top:"50%",left:"50%",
                 transform:"translate(-50%,-50%)",
-                width:92,height:92,objectFit:"contain",
-                opacity:0.34,filter:"brightness(10) saturate(0)",
+                width:98,height:98,objectFit:"contain",
+                opacity:0.28,filter:"brightness(10) saturate(0)",
                 pointerEvents:"none"}}/>
             )}
             {headshot&&!imgErr?(
@@ -4590,10 +4589,10 @@ function RevealedRow(props){
                   }
                   setImgErr(true);
                 }}
-                style={{position:"absolute",bottom:0,left:"50%",
+                style={{position:"absolute",bottom:-1,left:"50%",
                   transform:"translateX(-50%)",
-                  height:"142%",width:"auto",maxWidth:"none",
-                  objectFit:"cover",objectPosition:"top center",
+                  maxHeight:"94%",maxWidth:"112%",width:"auto",
+                  objectFit:"contain",objectPosition:"center bottom",
                   pointerEvents:"none"}}/>
             ):silhouette}
           </div>
@@ -4836,11 +4835,11 @@ function ExportBoardRow(props){
     <div style={{marginBottom:8,borderRadius:12,overflow:"hidden",position:"relative",height:102,border:"1px solid "+(st.bd||"transparent"),boxShadow:st.shadow||"none"}}>
       <div style={{position:"absolute",inset:0,background:"linear-gradient(90deg,"+teamColor+" 0%,"+teamColor+"dd 23%,"+teamColor+"66 48%,transparent 76%)",zIndex:0}}/>
       <div style={{position:"absolute",inset:0,background:st.bg,zIndex:-1}}/>
-      <div style={{position:"absolute",left:10,top:10,width:82,height:82,borderRadius:"50%",overflow:"hidden",background:"radial-gradient(circle at 32% 28%, rgba(255,255,255,0.18), rgba(255,255,255,0.10) 55%, rgba(0,0,0,0.18) 100%)"}}>
-        {teamLogoSrc&&<img src={teamLogoSrc} alt="" style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:92,height:92,objectFit:"contain",opacity:0.34,filter:"brightness(10) saturate(0)"}}/>}
-        {headshot&&<img src={headshot} alt={safeName} style={{position:"absolute",bottom:-4,left:"50%",transform:"translateX(-50%)",height:"142%",width:"auto",objectFit:"cover",objectPosition:"top center"}}/>}
+      <div style={{position:"absolute",left:10,top:10,width:86,height:82,borderRadius:12,overflow:"visible",background:"linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04))"}}>
+        {teamLogoSrc&&<img src={teamLogoSrc} alt="" style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:98,height:98,objectFit:"contain",opacity:0.28,filter:"brightness(10) saturate(0)"}}/>}
+        {headshot&&<img src={headshot} alt={safeName} style={{position:"absolute",bottom:-1,left:"50%",transform:"translateX(-50%)",maxHeight:"94%",maxWidth:"112%",width:"auto",objectFit:"contain",objectPosition:"center bottom"}}/>}
       </div>
-      <div style={{position:"absolute",left:108,right:132,top:20}}>
+      <div style={{position:"absolute",left:112,right:132,top:20}}>
         <div style={{color:"rgba(255,255,255,0.55)",fontFamily:"system-ui,sans-serif",fontSize:9,fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",marginBottom:2}}>{firstName||"\u00A0"}</div>
         <div style={{color:"#fff",fontFamily:"Arial Black,Impact,sans-serif",fontWeight:900,fontSize:lastName.length>10?24:28,lineHeight:1.02,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{lastName}</div>
         <div style={{color:"rgba(255,255,255,0.42)",fontFamily:"system-ui,sans-serif",fontSize:10,fontWeight:600,marginTop:5}}>{ans.careerCat?"CAREER":formatSeasonValue(ans.year,sport)}{ans.careerCat?"":" · "+ans.pos}</div>
@@ -5379,16 +5378,19 @@ export default function App(){
         })}
       </div>}
 
+      {/* Bottom buttons */}
+      <div style={{display:"flex",gap:8,padding:"4px 8px 8px"}}>
+        <button onClick={function(){newRandomCard();}} style={{flex:1,background:"#2a3040",border:"none",borderRadius:10,padding:"10px",color:"white",fontWeight:700,cursor:"pointer",fontFamily:"system-ui,sans-serif",fontSize:14}}>New Card</button>
+      </div>
+
       {/* Category selector */}
-      <div style={{padding:"6px 8px 4px"}}>
+      <div style={{padding:"0 8px 8px"}}>
         <select value={activeCatId||""} onChange={function(e){setCustomSpec(null);setCatId(e.target.value);}} style={{width:"100%",background:"#2a3040",border:"1px solid #374151",borderRadius:10,padding:"10px 12px",color:"white",fontSize:13,fontWeight:700,outline:"none"}}>
           {cats.map(function(c){return <option key={c.id} value={c.id}>{c.lbl} {c.sub}</option>;})}
         </select>
       </div>
 
-      {/* Bottom buttons */}
-      <div style={{display:"flex",gap:8,padding:"4px 8px 8px"}}>
-        <button onClick={function(){newRandomCard();}} style={{flex:1,background:"#2a3040",border:"none",borderRadius:10,padding:"10px",color:"white",fontWeight:700,cursor:"pointer",fontFamily:"system-ui,sans-serif",fontSize:14}}>New Card</button>
+      <div style={{display:"flex",gap:8,padding:"0 8px 8px"}}>
         <button onClick={doShare} style={{flex:1,background:sc.primary,border:"1px solid "+sc.accent,borderRadius:10,padding:"10px",color:sc.accent,fontWeight:700,cursor:"pointer",fontFamily:"system-ui,sans-serif",fontSize:14}}>{customSpec?"Share Link":"Share"}</button>
       </div>
       <div style={{display:"flex",gap:8,padding:"0 8px 8px"}}>
