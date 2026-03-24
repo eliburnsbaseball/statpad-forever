@@ -1232,12 +1232,12 @@ function genCard(seed,catId,sport){
         if(["nfl","nba","mlb","nhl"].indexOf((""+logo.type).toLowerCase())>=0) return "league";
         return null;
       }
-      function pickWindowSize(kind){
-        if(kind==="team") return 12+Math.floor(rand()*17);
-        if(kind==="division") return 6+Math.floor(rand()*9);
-        if(kind==="league") return 3+Math.floor(rand()*3);
-        return null;
-      }
+    function pickWindowSize(kind){
+      if(kind==="team") return 10+Math.floor(Math.pow(rand(),3)*66);
+      if(kind==="division") return 6+Math.floor(rand()*9);
+      if(kind==="league") return 3+Math.floor(rand()*3);
+      return null;
+    }
       function clampWindowBounds(anchor,minYear,maxYear,size){
         if(size==null||isNaN(anchor)||isNaN(minYear)||isNaN(maxYear)) return null;
         var full=Math.max(1,maxYear-minYear+1);
@@ -1455,8 +1455,8 @@ var DB_LISTENERS={NFL:[],NBA:[],MLB:[],NHL:[]};
 
 // localStorage keys
 var LS={
-  NHL:"tpr_nhl_db_v10",NBA:"tpr_nba_db_v10",MLB:"tpr_mlb_db_v10",NFL:"tpr_nfl_db_v10",
-  NHL_TS:"tpr_nhl_ts_v10",NBA_TS:"tpr_nba_ts_v10",MLB_TS:"tpr_mlb_ts_v10",NFL_TS:"tpr_nfl_ts_v10"
+  NHL:"tpr_nhl_db_v11",NBA:"tpr_nba_db_v11",MLB:"tpr_mlb_db_v11",NFL:"tpr_nfl_db_v11",
+  NHL_TS:"tpr_nhl_ts_v11",NBA_TS:"tpr_nba_ts_v11",MLB_TS:"tpr_mlb_ts_v11",NFL_TS:"tpr_nfl_ts_v11"
 };
 var CACHE_TTL=24*60*60*1000; // 24h
 
