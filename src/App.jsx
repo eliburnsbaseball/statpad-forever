@@ -3404,7 +3404,8 @@ function useHeadshot(nm,sport,espnId,playerId){
   var [url,setUrl]=useState(null);
   useEffect(function(){
     if(!nm||!sport) return;
-    var k=sport+"|"+nm;
+    var cacheId=playerId||espnId||nm;
+    var k=sport+"|"+cacheId;
     if(true){
       if(HS_CACHE[k]!==undefined){setUrl(HS_CACHE[k]||null);return;}
       var active2=true;
@@ -3539,10 +3540,19 @@ function useHeadshot(nm,sport,espnId,playerId){
         scanIdCandidate2(cachedPlayer2&&cachedPlayer2.id);
         if(sport!=="NFL") scanIdCandidate2(espnId);
       }
-      if(preferEspnNba2) setTimeout(queueLocalCandidates2,350);
-      else queueLocalCandidates2();
-      offerNFLName2(nm);
-      if(baseP2&&baseP2.nm) offerNFLName2(baseP2.nm);
+        if(preferEspnNba2) setTimeout(queueLocalCandidates2,350);
+        else queueLocalCandidates2();
+        var deferNflName2=!!(sport==="NFL"&&playerId);
+        if(deferNflName2){
+          setTimeout(function(){
+            if(settled2) return;
+            offerNFLName2(nm);
+            if(baseP2&&baseP2.nm) offerNFLName2(baseP2.nm);
+          },1200);
+        } else {
+          offerNFLName2(nm);
+          if(baseP2&&baseP2.nm) offerNFLName2(baseP2.nm);
+        }
 
       if(sport==="MLB"){
         var parts2=nm.trim().split(" ");
