@@ -3453,19 +3453,53 @@ function useHeadshot(nm,sport,espnId,playerId){
       function normalizedName2(v){
         return (v||"").toLowerCase().replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").trim();
       }
-      function looksLikeTarget2(v){
-        var n=normalizedName2(v);
-        var normStripped2=stripped2.replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").trim();
-        if(!n) return false;
-        if(n===normTarget2||n===normStripped2) return true;
-        if(n.indexOf(normTarget2)>=0||normTarget2.indexOf(n)>=0) return true;
-        return false;
-      }
-      function offerNhlLanding2(id){
-        if(!id) return;
-        fetchJson2("https://api-web.nhle.com/v1/player/"+encodeURIComponent(String(id))+"/landing",function(d){
-          if(!d) return;
-          offer2(d.headshot);
+        function looksLikeTarget2(v){
+          var n=normalizedName2(v);
+          var normStripped2=stripped2.replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").trim();
+          if(!n) return false;
+          if(n===normTarget2||n===normStripped2) return true;
+          if(n.indexOf(normTarget2)>=0||normTarget2.indexOf(n)>=0) return true;
+          return false;
+        }
+        function offerWikiTitle2(title,sportWords2){
+          if(!title||settled2) return;
+          var summaryUrl2="https://en.wikipedia.org/api/rest_v1/page/summary/"+encodeURIComponent(title);
+          var imgUrl2="https://en.wikipedia.org/w/api.php?action=query&prop=pageimages&format=json&origin=*&pithumbsize=400&titles="+encodeURIComponent(title);
+          Promise.all([
+            fetch(summaryUrl2).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;}),
+            fetch(imgUrl2).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;})
+          ]).then(function(res2){
+            if(!active2||settled2) return;
+            var summary2=res2[0]||{};
+            var pages2=res2[1]&&res2[1].query&&res2[1].query.pages;
+            var img3=null;
+            if(pages2){
+              var firstKey2=Object.keys(pages2)[0];
+              img3=pages2[firstKey2]&&pages2[firstKey2].thumbnail&&pages2[firstKey2].thumbnail.source;
+            }
+            if(!img3) img3=summary2.thumbnail&&summary2.thumbnail.source;
+            if(!img3) return;
+            var desc2=((summary2.description||summary2.extract||"")+"").toLowerCase();
+            var titleOk2=looksLikeTarget2(summary2.title||title);
+            var descOk2=(sportWords2||[]).some(function(w){return desc2.indexOf(w)>=0;});
+            if(titleOk2||descOk2) offer2(img3.replace(/\/\d+px-/,"/400px-"));
+          }).catch(function(){});
+        }
+        function offerWikiSearch2(searchText2,sportWords2){
+          if(!searchText2||settled2) return;
+          offerWikiTitle2(searchText2.trim().replace(/\s+/g,"_"),sportWords2);
+          fetchJson2("https://en.wikipedia.org/w/api.php?action=query&list=search&format=json&origin=*&srlimit=5&srsearch="+encodeURIComponent(searchText2),function(d){
+            var results2=d&&d.query&&d.query.search||[];
+            results2.forEach(function(item){
+              if(item&&item.title) offerWikiTitle2(item.title,sportWords2);
+            });
+          });
+        }
+        function offerNhlLanding2(id){
+          if(!id) return;
+          fetchJson2("https://api-web.nhle.com/v1/player/"+encodeURIComponent(String(id))+"/landing",function(d){
+            if(!d) return;
+            offer2(d.headshot);
         });
       }
       function offerSportId2(id){
@@ -3526,30 +3560,38 @@ function useHeadshot(nm,sport,espnId,playerId){
         return null;
       }
 
-      var baseData2=getSportData(sport);
-      var baseP2=baseData2&&baseData2.pmap&&(baseData2.pmap[nmL2]||baseData2.pmap[stripped2]);
-      var preferEspnNba2=!!(sport==="NBA"&&baseP2&&baseP2.end&&baseP2.end>=2015);
-      scanIdCandidate2(playerId);
-      function queueLocalCandidates2(){
-        scanIdCandidate2(PLAYER_IDS[sport]&&(PLAYER_IDS[sport][nmL2]||PLAYER_IDS[sport][stripped2]||PLAYER_IDS[sport][cleaned2]));
-        scanIdCandidate2(findCanonicalLocalId2());
-        scanIdCandidate2(baseP2&&baseP2.id);
-        var liveP2=LIVE_PMAP[sport]&&(LIVE_PMAP[sport][nmL2]||LIVE_PMAP[sport][stripped2]);
-        scanIdCandidate2(liveP2&&liveP2.id);
-        var cachedPlayer2=PLAYER_CACHE[sport+"|"+nmL2]||PLAYER_CACHE[sport+"|"+stripped2];
-        scanIdCandidate2(cachedPlayer2&&cachedPlayer2.id);
-        if(sport!=="NFL") scanIdCandidate2(espnId);
-      }
-        if(preferEspnNba2) setTimeout(queueLocalCandidates2,350);
-        else queueLocalCandidates2();
-        var deferNflName2=!!(sport==="NFL"&&playerId);
-        if(deferNflName2){
-          setTimeout(function(){
-            if(settled2) return;
-            offerNFLName2(nm);
-            if(baseP2&&baseP2.nm) offerNFLName2(baseP2.nm);
-          },1200);
-        } else {
+        var baseData2=getSportData(sport);
+        var baseP2=baseData2&&baseData2.pmap&&(baseData2.pmap[nmL2]||baseData2.pmap[stripped2]);
+        var currentYear2=(new Date()).getFullYear();
+        var preferRetiredNflWiki2=!!(sport==="NFL"&&((baseP2&&baseP2.end&&baseP2.end<currentYear2)||(playerId&&String(playerId).indexOf("hist-")===0)));
+        var preferEspnNba2=!!(sport==="NBA"&&baseP2&&baseP2.end&&baseP2.end>=2015);
+        function queueLocalCandidates2(){
+          scanIdCandidate2(PLAYER_IDS[sport]&&(PLAYER_IDS[sport][nmL2]||PLAYER_IDS[sport][stripped2]||PLAYER_IDS[sport][cleaned2]));
+          scanIdCandidate2(findCanonicalLocalId2());
+          scanIdCandidate2(playerId);
+          scanIdCandidate2(baseP2&&baseP2.id);
+          var liveP2=LIVE_PMAP[sport]&&(LIVE_PMAP[sport][nmL2]||LIVE_PMAP[sport][stripped2]);
+          scanIdCandidate2(liveP2&&liveP2.id);
+          var cachedPlayer2=PLAYER_CACHE[sport+"|"+nmL2]||PLAYER_CACHE[sport+"|"+stripped2];
+          scanIdCandidate2(cachedPlayer2&&cachedPlayer2.id);
+          if(sport!=="NFL") scanIdCandidate2(espnId);
+        }
+          if(preferRetiredNflWiki2){
+            offerWikiSearch2(nm+" NFL",["football","nfl","running back","wide receiver","quarterback","linebacker","american football"]);
+            if(baseP2&&baseP2.nm&&baseP2.nm!==nm) offerWikiSearch2(baseP2.nm+" NFL",["football","nfl","running back","wide receiver","quarterback","linebacker","american football"]);
+          }
+          if(preferEspnNba2) setTimeout(queueLocalCandidates2,350);
+          else if(preferRetiredNflWiki2) setTimeout(queueLocalCandidates2,1400);
+          else queueLocalCandidates2();
+          var deferNflName2=!!(sport==="NFL"&&(playerId||preferRetiredNflWiki2));
+          if(deferNflName2){
+            setTimeout(function(){
+              if(settled2) return;
+              if(preferRetiredNflWiki2) return;
+              offerNFLName2(nm);
+              if(baseP2&&baseP2.nm) offerNFLName2(baseP2.nm);
+            },1200);
+          } else {
           offerNFLName2(nm);
           if(baseP2&&baseP2.nm) offerNFLName2(baseP2.nm);
         }
