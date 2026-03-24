@@ -3444,6 +3444,9 @@ function useHeadshot(nm,sport,espnId,playerId){
         queue2.push(u);
         pump2();
       }
+      function isEspnNflHeadshot2(u){
+        return !!(u&&sport==="NFL"&&String(u).indexOf("espncdn.com")>=0&&String(u).indexOf("/headshots/nfl/players/full/")>=0);
+      }
       function fetchJson2(u,cb){
         fetch(u)
           .then(function(r){return r.ok?r.json():Promise.reject();})
@@ -3508,7 +3511,16 @@ function useHeadshot(nm,sport,espnId,playerId){
         if(sport==="NFL"){
           loadNFLHeadshots().then(function(map){
             if(!active2||settled2) return;
-            offer2(map&&map[sid2]);
+            var mapped2=map&&map[sid2];
+            if(!mapped2) return;
+            if(preferRetiredNflWiki2&&!isEspnNflHeadshot2(mapped2)){
+              setTimeout(function(){
+                if(!active2||settled2) return;
+                offer2(mapped2);
+              },2200);
+              return;
+            }
+            offer2(mapped2);
           });
           return;
         }
