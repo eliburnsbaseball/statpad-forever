@@ -3158,7 +3158,7 @@ var PLAYER_IDS={
     "deandre hopkins":15795,
     "davante adams":16800,
     "stefon diggs":17289,
-    "justin jefferson":4361579,
+    "justin jefferson":4262921,
     "tyreek hill":3116406,
     "cooper kupp":4036327,
     "amari cooper":3054320,
@@ -3203,6 +3203,7 @@ var PLAYER_IDS={
     "steve smith":5929,
     "antonio brown":14056,
     "frank gore":9547,
+    "ray rice":11289,
     "darren mcfadden":11238,
     "jamaal charles":11249,
     "chris johnson":11258,
@@ -5574,6 +5575,9 @@ export default function App(){
         <button onClick={function(){setShowBoards(function(v){return !v;});setShowLoad(false);setBoardHistory(loadBoardHistory());}} style={{flex:1,background:"#2a3040",border:"none",borderRadius:20,padding:"8px",color:"#9ca3af",fontWeight:700,cursor:"pointer",fontFamily:"system-ui,sans-serif",fontSize:12}}>PAST BOARDS</button>
       </div>
       <div style={{display:"flex",gap:8,padding:"0 8px 2px"}}>
+        <button onClick={function(){newRandomCard();}} style={{flex:1,background:"#2a3040",border:"none",borderRadius:10,padding:"10px",color:"white",fontWeight:700,cursor:"pointer",fontFamily:"system-ui,sans-serif",fontSize:14}}>New Card</button>
+      </div>
+      <div style={{display:"flex",gap:8,padding:"0 8px 2px"}}>
         <button onClick={openCustomBuilder} style={{flex:1,background:customSpec?sc.primary:"#2a3040",border:customSpec?"1px solid "+sc.accent:"none",borderRadius:20,padding:"8px",color:customSpec?sc.accent:"#9ca3af",fontWeight:700,cursor:"pointer",fontFamily:"system-ui,sans-serif",fontSize:12}}>{customSpec?"EDIT CUSTOM CARD":"CUSTOM CARD"}</button>
       </div>
       <div style={{display:"flex",gap:8,padding:"0 8px 2px"}}>
@@ -5596,11 +5600,6 @@ export default function App(){
           </button>;
         })}
       </div>}
-
-      {/* Bottom buttons */}
-      <div style={{display:"flex",gap:8,padding:"4px 8px 8px"}}>
-        <button onClick={function(){newRandomCard();}} style={{flex:1,background:"#2a3040",border:"none",borderRadius:10,padding:"10px",color:"white",fontWeight:700,cursor:"pointer",fontFamily:"system-ui,sans-serif",fontSize:14}}>New Card</button>
-      </div>
 
       {/* Category selector */}
       <div style={{padding:"0 8px 8px"}}>
