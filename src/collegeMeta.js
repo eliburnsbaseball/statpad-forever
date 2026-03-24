@@ -91,6 +91,7 @@ export const COLLEGE_NAME_TO_SLUG = {
   "Gonzaga": "gonzaga",
   "Houston": "houston",
   "Indiana": "indiana",
+  "Illinois": "illinois",
   "Iowa": "iowa",
   "Iowa State": "iowa-st",
   "Kansas": "kansas",
