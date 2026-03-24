@@ -2777,7 +2777,7 @@ var PLAYER_IDS={
   NFL:{
     "derrick henry":3054211,
     "ladainian tomlinson":2062,
-    "adrian peterson":3054234,
+    "adrian peterson":10452,
     "barry sanders":399,
     "emmitt smith":418,
     "saquon barkley":3929630,
@@ -3570,6 +3570,8 @@ function useHeadshot(nm,sport,espnId,playerId){
         if(!id) return;
         var sid2=String(id);
         if(sport==="NFL"){
+          var espnUrl2=getEspnHsUrl(sport,sid2);
+          if(espnUrl2) offer2(espnUrl2);
           loadNFLHeadshots().then(function(map){
             if(!active2||settled2) return;
             var mapped2=map&&map[sid2];
