@@ -3377,9 +3377,10 @@ var NFL_PAGE_HEADSHOTS={
   "jim brown":"https://static.www.nfl.com/image/private/t_headshot_desktop/league/putro8sfykabuanlfcu1"
 };
 var NBA_EXPLICIT_IDS={
+  "michael jordan":893,
   "wilt chamberlain":76375,
   "karl malone":252,
-  "scottie pippen":663
+  "scottie pippen":937
 };
 
 function loadNFLHeadshots(){
