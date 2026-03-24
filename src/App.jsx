@@ -1285,7 +1285,7 @@ function genCard(seed,catId,sport){
       var myr=lbAll.map(function(e){return e.s.year;});
       var mn=Math.min.apply(null,myr),mx=Math.max.apply(null,myr);
     var yl=cat.career?"CAREER":(mn===mx?""+mn:mn+" to "+mx);
-    rows.push({c:c,yl:yl,ys:ys,ye:ye,ans:{nm:pick.p.nm,pos:pick.p.pos,team:pick.s.team,year:cat.career?"CAREER":pick.s.year,v:pick.v,lb:lb,careerCat:cat.career||false}});
+    rows.push({c:c,yl:yl,ys:ys,ye:ye,ans:{id:pick.p.id||null,nm:pick.p.nm,pos:pick.p.pos,team:pick.s.team,year:cat.career?"CAREER":pick.s.year,v:pick.v,lb:lb,careerCat:cat.career||false}});
     used[pick.p.nm]=true;
     usedC[c.id]=true;
     return true;
@@ -4164,10 +4164,15 @@ function UnrevealedRow(props){
   var row=props.row,onOpen=props.onOpen,sport=props.sport;
   var displayYl=formatSeasonRangeLabel(row.yl,sport);
   var yp=displayYl.indexOf(" to ")>=0?displayYl.split(" to "):null;
+  var displayLogo=(row&&row.c&&row.c.logo)||{};
+  if(row&&row.c&&row.c.q){
+    if(row.c.q.isCollege) displayLogo={type:"college",college:row.c.q.college,sport:sport};
+    else if(row.c.q.isCollegeConf) displayLogo={type:"collegeConf",collegeConf:row.c.q.collegeConf,sport:sport};
+  }
   return (
     <div style={{marginBottom:6}}>
       <div style={{background:"#232830",borderRadius:8,display:"flex",alignItems:"stretch",minHeight:68}}>
-        <div style={{width:76,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",padding:"0 6px"}}><SportLogo logo={row.c.logo} sz={52} sport={sport}/></div>
+        <div style={{width:76,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",padding:"0 6px"}}><SportLogo logo={displayLogo} sz={52} sport={sport}/></div>
         <div style={{width:86,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
           <div style={{textAlign:"center",color:"white",fontFamily:"Arial Black,sans-serif",fontWeight:900}}>
             {yp?<div><div style={{fontSize:16}}>{yp[0]}</div><div style={{fontSize:11,color:"#6b7280",fontWeight:400}}>to</div><div style={{fontSize:16}}>{yp[1]}</div></div>:<div style={{fontSize:18}}>{displayYl}</div>}
