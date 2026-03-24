@@ -3452,6 +3452,9 @@ function useHeadshot(nm,sport,espnId,playerId){
       function isEspnNflHeadshot2(u){
         return !!(u&&sport==="NFL"&&String(u).indexOf("espncdn.com")>=0&&String(u).indexOf("/headshots/nfl/players/full/")>=0);
       }
+      function isLikelyPlaceholderNfl2(u){
+        return !!(u&&sport==="NFL"&&String(u).indexOf("static.www.nfl.com")>=0&&String(u).indexOf("image/private")>=0);
+      }
       function fetchJson2(u,cb){
         fetch(u)
           .then(function(r){return r.ok?r.json():Promise.reject();})
@@ -3518,11 +3521,7 @@ function useHeadshot(nm,sport,espnId,playerId){
             if(!active2||settled2) return;
             var mapped2=map&&map[sid2];
             if(!mapped2) return;
-            if(preferRetiredNflWiki2&&!isEspnNflHeadshot2(mapped2)){
-              setTimeout(function(){
-                if(!active2||settled2) return;
-                offer2(mapped2);
-              },2200);
+            if(preferRetiredNflWiki2&&(!isEspnNflHeadshot2(mapped2)||isLikelyPlaceholderNfl2(mapped2))){
               return;
             }
             offer2(mapped2);
@@ -3580,7 +3579,10 @@ function useHeadshot(nm,sport,espnId,playerId){
         var baseData2=getSportData(sport);
         var baseP2=baseData2&&baseData2.pmap&&(baseData2.pmap[nmL2]||baseData2.pmap[stripped2]);
         var currentYear2=(new Date()).getFullYear();
-        var preferRetiredNflWiki2=!!(sport==="NFL"&&((baseP2&&baseP2.end&&baseP2.end<currentYear2)||(playerId&&String(playerId).indexOf("hist-")===0)));
+        var isRetiredByRange2=!!(baseP2&&baseP2.end&&baseP2.end<currentYear2);
+        var isHistoricalId2=!!(playerId&&String(playerId).indexOf("hist-")===0);
+        var preferRetiredNflWiki2=!!(sport==="NFL"&&(isRetiredByRange2||isHistoricalId2));
+        var preferRetiredNbaWiki2=!!(sport==="NBA"&&isRetiredByRange2);
         var preferEspnNba2=!!(sport==="NBA"&&baseP2&&baseP2.end&&baseP2.end>=2015);
         function queueLocalCandidates2(){
           scanIdCandidate2(PLAYER_IDS[sport]&&(PLAYER_IDS[sport][nmL2]||PLAYER_IDS[sport][stripped2]||PLAYER_IDS[sport][cleaned2]));
@@ -3595,10 +3597,16 @@ function useHeadshot(nm,sport,espnId,playerId){
         }
           if(preferRetiredNflWiki2){
             offerWikiSearch2(nm+" NFL",["football","nfl","running back","wide receiver","quarterback","linebacker","american football"]);
+            offerWikiSearch2(nm,["football","nfl","running back","wide receiver","quarterback","linebacker","american football"]);
             if(baseP2&&baseP2.nm&&baseP2.nm!==nm) offerWikiSearch2(baseP2.nm+" NFL",["football","nfl","running back","wide receiver","quarterback","linebacker","american football"]);
           }
+          if(preferRetiredNbaWiki2){
+            offerWikiSearch2(nm+" NBA",["basketball","nba","guard","forward","center","basketball player","nba player"]);
+            offerWikiSearch2(nm,["basketball","nba","guard","forward","center","basketball player","nba player"]);
+            if(baseP2&&baseP2.nm&&baseP2.nm!==nm) offerWikiSearch2(baseP2.nm+" NBA",["basketball","nba","guard","forward","center","basketball player","nba player"]);
+          }
           if(preferEspnNba2) setTimeout(queueLocalCandidates2,350);
-          else if(preferRetiredNflWiki2) setTimeout(queueLocalCandidates2,1400);
+          else if(preferRetiredNflWiki2||preferRetiredNbaWiki2) setTimeout(queueLocalCandidates2,1400);
           else queueLocalCandidates2();
           var deferNflName2=!!(sport==="NFL"&&(playerId||preferRetiredNflWiki2));
           if(deferNflName2){
