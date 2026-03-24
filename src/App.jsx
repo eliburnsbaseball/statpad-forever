@@ -874,12 +874,14 @@ function applyNFLWikiMeta(player,meta){
   });
   player.seasons.forEach(function(s){
     NFL_SEASON_FLAG_KEYS.forEach(function(k){
-      s[k]=yearSets[k]&&yearSets[k][parseInt(s.year,10)]?1:0;
+      var seasonYear=parseInt(s.year,10);
+      var wikiYes=!!(yearSets[k]&&yearSets[k][seasonYear]);
+      s[k]=(num0(s[k])===1||wikiYes)?1:0;
     });
-    s.mvpPlace=num0(meta.places&&meta.places.mvp&&meta.places.mvp[parseInt(s.year,10)]);
-    s.opoyPlace=num0(meta.places&&meta.places.opoy&&meta.places.opoy[parseInt(s.year,10)]);
-    s.royPlace=num0(meta.places&&meta.places.roy&&meta.places.roy[parseInt(s.year,10)]);
-    s.droyPlace=num0(meta.places&&meta.places.droy&&meta.places.droy[parseInt(s.year,10)]);
+    s.mvpPlace=Math.max(num0(s.mvpPlace),num0(meta.places&&meta.places.mvp&&meta.places.mvp[parseInt(s.year,10)]));
+    s.opoyPlace=Math.max(num0(s.opoyPlace),num0(meta.places&&meta.places.opoy&&meta.places.opoy[parseInt(s.year,10)]));
+    s.royPlace=Math.max(num0(s.royPlace),num0(meta.places&&meta.places.roy&&meta.places.roy[parseInt(s.year,10)]));
+    s.droyPlace=Math.max(num0(s.droyPlace),num0(meta.places&&meta.places.droy&&meta.places.droy[parseInt(s.year,10)]));
     if(s.mvp) s.mvpPlace=1;
     if(s.opoy) s.opoyPlace=1;
     if(s.roy) s.royPlace=1;
@@ -1047,11 +1049,24 @@ function getConstraintComboText(c){
   if(c.q.isCollegeConf) return c.q.collegeConf||"";
   return [c.q.top,c.q.main].filter(Boolean).join(" ");
 }
+function getConstraintCompactLabel(c){
+  if(!c||!c.q) return "";
+  if(c.q.isCollege) return c.q.college||"";
+  if(c.q.isCollegeConf) return c.q.collegeConf||"";
+  var top=(c.q.top||"").trim();
+  var main=(c.q.main||"").trim();
+  if(top==="POSITION") return main;
+  if(top==="AGE"&&main) return "AGE "+main;
+  if(main==="SEASON"&&top) return top;
+  if(main==="CAREER"&&top) return top;
+  return [top,main].filter(Boolean).join(" ").trim();
+}
 function canUseDoubleConstraint(entry){
   var c=entry&&entry.c;
   if(!c||!c.q) return false;
   if(c.q.isCollege||c.q.isCollegeConf) return false;
   if(!c.q.main) return false;
+  if(c.id==="a25"||c.id==="a30") return false;
   if(c.logo&&c.logo.type==="team") return false;
   if(c.logo&&c.logo.type==="conf") return false;
   if(c.logo&&c.logo.type==="quad") return false;
@@ -1082,15 +1097,16 @@ function buildDoubleQualificationEntries(viable,all,cat,sport){
       });
       if(lbAll.length<7) continue;
       lbAll.sort(function(x,y){return y.v-x.v;});
-      var qa=a.c.q||{},qb=b.c.q||{};
+      var labelA=getConstraintDisplayLabel(a.c);
+      var labelB=getConstraintDisplayLabel(b.c);
       combos.push({
         c:{
           id:"dbl_"+key,
           logo:a.c.logo||{type:sport.toLowerCase()},
           q:{
-            top:getConstraintComboText(a.c),
-            main:(qa.main||"")+(qa.main&&qb.main?" + ":"")+(qb.main||""),
-            sub:"DOUBLE QUALIFICATION"
+            top:"DOUBLE QUALIFICATION",
+            main:labelA+(labelA&&labelB?" + ":"")+labelB,
+            sub:null
           },
           w:0.18,
           isDouble:true,
@@ -1192,6 +1208,7 @@ function genCard(seed,catId,sport){
   var eligPlayers=filterByCat(sd.players,cat,sport);
   function constraintAllowedForCat(c){
     if(sport!=="NFL"||!c||!c.id) return true;
+    if(cat.career&&(c.id==="a25"||c.id==="a30")) return false;
     var defenseCats={tackles:1,sacks:1,forcedFumbles:1};
     if(!defenseCats[cat.id]) return true;
     var offenseOnlyConstraints={
@@ -1600,6 +1617,7 @@ function mergePlayers(sport,newPlayers){
 
 function nflConstraintAllowedForCat(cat,c,sport){
   if(sport!=="NFL"||!c||!c.id) return true;
+  if(cat&&cat.career&&(c.id==="a25"||c.id==="a30")) return false;
   var defenseCats={tackles:1,sacks:1,forcedFumbles:1};
   if(!defenseCats[cat.id]) return true;
   var offenseOnlyConstraints={
@@ -1620,7 +1638,14 @@ function getConstraintDisplayLabel(c,sport){
   if(c.logo&&c.logo.type==="quad") return c.logo.val||"Division";
   if(c.logo&&c.logo.type==="conf") return c.logo.val||"League";
   if(c.q){
-    return [c.q.top,c.q.main,c.q.sub].filter(Boolean).join(" · ");
+    var top=(c.q.top||"").trim();
+    var main=(c.q.main||"").trim();
+    var sub=(c.q.sub||"").trim();
+    if(top==="POSITION") return main;
+    if(top==="AGE"&&main) return "AGE "+main;
+    if(main==="SEASON"&&top) return top;
+    if(main==="CAREER"&&top) return top;
+    return [top,main,sub&&["SAME SEASON","CAREER","ANYTIME IN CAREER","DOUBLE QUALIFICATION"].indexOf(sub)<0?sub:null].filter(Boolean).join(" · ");
   }
   return c.id||"Constraint";
 }
@@ -1812,7 +1837,7 @@ function makeCustomCard(spec){
   };
 }
 
-function makeTeamCard(spec){
+function legacyMakeTeamCard(spec){
   if(!spec||!spec.sport||!spec.catId||!Array.isArray(spec.rows)) return null;
   var sd=getLiveSportData(spec.sport);
   if(!sd||!sd.players||!sd.players.length) return null;
@@ -3921,18 +3946,6 @@ function useHeadshot(nm,sport,espnId,playerId){
         if(sport==="NFL"){
           var espnUrl2=getEspnHsUrl(sport,sid2);
           if(espnUrl2) offer2(espnUrl2);
-          setTimeout(function(){
-            if(!active2||settled2) return;
-            loadNFLHeadshots().then(function(map){
-              if(!active2||settled2) return;
-              var mapped2=map&&map[sid2];
-              if(!mapped2) return;
-              if(preferRetiredNflWiki2&&(!isEspnNflHeadshot2(mapped2)||isLikelyPlaceholderNfl2(mapped2))){
-                return;
-              }
-              offer2(mapped2);
-            });
-          },900);
           return;
         }
         if(sport==="NBA"){
@@ -4034,6 +4047,8 @@ function useHeadshot(nm,sport,espnId,playerId){
         var preferEspnNba2=!!(sport==="NBA");
         var explicitEspnNflId2=sport==="NFL"?(PLAYER_IDS[sport]&&(PLAYER_IDS[sport][nmL2]||PLAYER_IDS[sport][stripped2]||PLAYER_IDS[sport][cleaned2])):null;
         var trustedNflEspnId2=sport==="NFL"?(explicitEspnNflId2||espnId):null;
+        var liveP2=LIVE_PMAP[sport]&&(LIVE_PMAP[sport][nmL2]||LIVE_PMAP[sport][stripped2]);
+        var cachedPlayer2=PLAYER_CACHE[sport+"|"+nmL2]||PLAYER_CACHE[sport+"|"+stripped2];
         function queueLocalCandidates2(){
           if(sport==="NBA"){
             var explicitNbaId2=NBA_EXPLICIT_IDS[nmL2]||NBA_EXPLICIT_IDS[stripped2]||NBA_EXPLICIT_IDS[cleaned2];
@@ -4049,16 +4064,11 @@ function useHeadshot(nm,sport,espnId,playerId){
               offerNbaEspnId2(PLAYER_IDS[sport]&&PLAYER_IDS[sport][baseEspnName2]);
             }
           }
-          if(sport==="NFL"){
-            offerNflEspnId2(explicitEspnNflId2);
-            offerNflNBC2(nm);
-            if(baseP2&&baseP2.nm) offerNflNBC2(baseP2.nm);
-            if(!trustedNflEspnId2){
-              offerNflLocalId2(findCanonicalLocalId2());
-              offerNflLocalId2(playerId);
-              offerNflLocalId2(baseP2&&baseP2.id);
-            }
-          } else if(sport==="NBA"){
+        if(sport==="NFL"){
+          offerNflEspnId2(explicitEspnNflId2);
+          offerNflNBC2(nm);
+          if(baseP2&&baseP2.nm) offerNflNBC2(baseP2.nm);
+        } else if(sport==="NBA"){
             scanNbaLocalId2(findCanonicalLocalId2());
             scanNbaLocalId2(playerId);
             scanNbaLocalId2(baseP2&&baseP2.id);
@@ -4078,15 +4088,12 @@ function useHeadshot(nm,sport,espnId,playerId){
             scanIdCandidate2(playerId);
             scanIdCandidate2(baseP2&&baseP2.id);
           }
-          var liveP2=LIVE_PMAP[sport]&&(LIVE_PMAP[sport][nmL2]||LIVE_PMAP[sport][stripped2]);
-          if(sport==="NFL"){ if(!trustedNflEspnId2) offerNflLocalId2(liveP2&&liveP2.id); }
+          if(sport==="NFL"){ }
           else if(sport==="NBA") scanNbaLocalId2(liveP2&&liveP2.id);
           else if(sport==="MLB") scanIdCandidate2(liveP2&&liveP2.id);
           else scanIdCandidate2(liveP2&&liveP2.id);
-          var cachedPlayer2=PLAYER_CACHE[sport+"|"+nmL2]||PLAYER_CACHE[sport+"|"+stripped2];
           if(sport==="NFL"){
             offerNflNBC2(cachedPlayer2&&cachedPlayer2.nm);
-            if(!trustedNflEspnId2) offerNflLocalId2(cachedPlayer2&&cachedPlayer2.id);
           }
           else if(sport==="NBA") scanNbaLocalId2(cachedPlayer2&&cachedPlayer2.id);
           else if(sport==="MLB") scanIdCandidate2(cachedPlayer2&&cachedPlayer2.id);
@@ -4096,17 +4103,24 @@ function useHeadshot(nm,sport,espnId,playerId){
           else if(sport==="MLB") offerMlbEspnId2(espnId);
           else scanIdCandidate2(espnId);
         }
-          if(sport==="NFL"&&!trustedNflEspnId2){
+          if(sport==="NFL"){
             setTimeout(function(){
               if(settled2) return;
               offerNflNBC2(nm);
               if(baseP2&&baseP2.nm) offerNflNBC2(baseP2.nm);
+              offerNflLocalId2(findCanonicalLocalId2());
+              offerNflLocalId2(playerId);
+              offerNflLocalId2(baseP2&&baseP2.id);
+              offerNflLocalId2(liveP2&&liveP2.id);
+              offerNflLocalId2(cachedPlayer2&&cachedPlayer2.id);
+              offerNFLName2(nm);
+              if(baseP2&&baseP2.nm) offerNFLName2(baseP2.nm);
               offer2(NFL_PAGE_HEADSHOTS[nmL2]||NFL_PAGE_HEADSHOTS[stripped2]||NFL_PAGE_HEADSHOTS[cleaned2]);
               if(baseP2&&baseP2.nm){
                 var baseName2=(baseP2.nm||"").toLowerCase().trim();
                 offer2(NFL_PAGE_HEADSHOTS[baseName2]);
               }
-            },1400);
+            },1600);
           }
           if(preferRetiredNflWiki2){
             offerWikiSearch2(nm+" NFL",["football","nfl","running back","wide receiver","quarterback","linebacker","american football"]);
@@ -4122,7 +4136,7 @@ function useHeadshot(nm,sport,espnId,playerId){
           else if(preferEspnNba2) setTimeout(queueLocalCandidates2,550);
           else if(preferRetiredNflWiki2||preferRetiredNbaWiki2) setTimeout(queueLocalCandidates2,1400);
           else queueLocalCandidates2();
-          var deferNflName2=!!(sport==="NFL"&&!trustedNflEspnId2);
+          var deferNflName2=false;
           if(deferNflName2){
             setTimeout(function(){
               if(settled2) return;
@@ -5027,7 +5041,7 @@ function CustomCardModal(props){
   );
 }
 
-function TeamBoardModal(props){
+function LegacyTeamBoardModal(props){
   var initialSport=props.sport||"NFL";
   var initialCatId=props.catId||((SPORT_CATS[initialSport]||[])[0]||{}).id||null;
   var initialSpec=props.initialSpec&&props.initialSpec.customMode==="team"?props.initialSpec:null;
@@ -5118,6 +5132,211 @@ function TeamBoardModal(props){
               </div>
             </div>;
           })}
+        </div>
+        <div style={{padding:16,borderTop:"1px solid #2f3746",display:"flex",gap:8}}>
+          <button onClick={props.onClose} style={{flex:1,background:"#2a3040",border:"none",borderRadius:10,padding:"11px",color:"#9ca3af",fontWeight:700,cursor:"pointer"}}>Cancel</button>
+          <button onClick={submit} style={{flex:1,background:sc.primary,border:"1px solid "+sc.accent,borderRadius:10,padding:"11px",color:sc.accent,fontWeight:700,cursor:"pointer"}}>Build Team Board</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function makeTeamCard(spec){
+  if(!spec||!spec.sport||!spec.catId||!Array.isArray(spec.teams)||!spec.teams.length) return null;
+  var sd=getLiveSportData(spec.sport);
+  if(!sd||!sd.players||!sd.players.length) return null;
+  var cat=sd.cats.find(function(c){return c.id===spec.catId;})||sd.cats[0];
+  if(!cat) return null;
+  var teamList=spec.teams.map(function(t){return getCanonicalTeam(spec.sport,t);}).filter(Boolean);
+  teamList=Array.from(new Set(teamList));
+  if(!teamList.length) return null;
+  var teamSet={};
+  teamList.forEach(function(t){teamSet[t]=1;});
+  function inChosenTeams(season){
+    return !!teamSet[getCanonicalTeam(spec.sport,season&&season.team)];
+  }
+  function buildLogo(){
+    if(teamList.length===1) return {type:"team",val:teamList[0],sport:spec.sport};
+    if(teamList.length<=4) return {type:"quad",teams:teamList.slice(0,4),sport:spec.sport};
+    return {type:(spec.sport||"NFL").toLowerCase()};
+  }
+  function buildMainLabel(){
+    if(teamList.length===1){
+      var tm=getTeamMeta(teamList[0],spec.sport);
+      return (tm&&tm.meta&&tm.meta.nm)||teamList[0];
+    }
+    if(teamList.length===2) return teamList.join(" + ");
+    return teamList.length+" TEAMS";
+  }
+  var all=[];
+  filterByCat(sd.players,cat,spec.sport).forEach(function(p){
+    if(cat.career){
+      var matching=(p.seasons||[]).filter(inChosenTeams);
+      if(!matching.length) return;
+      var cv=getStatVal(null,cat,p);
+      if(cv>0) all.push({p:p,s:matching[matching.length-1],v:cv});
+      return;
+    }
+    (p.seasons||[]).forEach(function(s){
+      if(!inChosenTeams(s)) return;
+      var v=getStatVal(s,cat,p);
+      var absV=cat.invert?-v:v;
+      if(absV>0) all.push({p:p,s:s,v:absV});
+    });
+  });
+  if(all.length<7) return null;
+  var viable=[{c:null,lbAll:all.slice().sort(function(a,b){return b.v-a.v;}),w:0.75}];
+  sd.constraints.forEach(function(c){
+    if(!c||!isPlainQualifierConstraint(c)) return;
+    if(!nflConstraintAllowedForCat(cat,c,spec.sport)) return;
+    var lbAll=all.filter(function(e){return cat.career?c.fn(e.p,e.p.seasons[0]||{}):c.fn(e.p,e.s);});
+    if(lbAll.length<7) return;
+    lbAll.sort(function(a,b){return b.v-a.v;});
+    viable.push({c:c,lbAll:lbAll,w:c.w||1});
+  });
+  if(viable.length<5) return null;
+  var rand=rng(Math.abs(hashSeedParts("teamcustom",spec.sport,spec.catId,JSON.stringify(teamList)))%999999);
+  var pool=[];
+  viable.forEach(function(entry){
+    var weight=Math.max(1,Math.round((entry.w||1)*10));
+    for(var w=0;w<weight;w++) pool.push(entry);
+  });
+  pool.sort(function(){return rand()-0.5;});
+  var rows=[],usedPlayers={},usedConstraintIds={};
+  for(var i=0;i<pool.length&&rows.length<5;i++){
+    var entry=pool[i];
+    var constraint=entry.c;
+    var constraintId=constraint?constraint.id:"team_base";
+    if(usedConstraintIds[constraintId]) continue;
+    var lbAll=entry.lbAll.slice();
+    var available=lbAll.filter(function(e){
+      if(usedPlayers[e.p.nm]) return false;
+      return constraint?(cat.career?constraint.fn(e.p,e.p.seasons[0]||{}):constraint.fn(e.p,e.s)):true;
+    });
+    if(!available.length) continue;
+    var pick=available[Math.floor(rand()*Math.min(5,available.length))];
+    var rowYears=lbAll.map(function(e){return parseInt(e.s&&e.s.year,10);}).filter(function(y){return !isNaN(y)&&y>0;});
+    var ys=null,ye=null;
+    var yearText=cat.career?"CAREER":(rowYears.length?(Math.min.apply(null,rowYears)===Math.max.apply(null,rowYears)?(""+Math.min.apply(null,rowYears)):(Math.min.apply(null,rowYears)+" to "+Math.max.apply(null,rowYears))):"");
+    rows.push({
+      c:{
+        id:"teamcustom_"+rows.length+"_"+constraintId+"_"+teamList.join("_"),
+        logo:buildLogo(),
+        q:{
+          top:teamList.length===1?"TEAM":"TEAMS",
+          main:constraint?getConstraintDisplayLabel(constraint,spec.sport):"ANY QUALIFIER",
+          sub:buildMainLabel()
+        },
+        fn:(function(constraint){
+          return function(p,s){
+            if(cat.career){
+              if(!(p.seasons||[]).some(inChosenTeams)) return false;
+              return constraint?constraint.fn(p,(p.seasons&&p.seasons[0])||{}):true;
+            }
+            if(!inChosenTeams(s)) return false;
+            return constraint?constraint.fn(p,s):true;
+          };
+        })(constraint)
+      },
+      yl:yearText,
+      ys:ys,
+      ye:ye,
+      ans:{
+        id:pick.p.id||null,
+        nm:pick.p.nm,
+        pos:pick.p.pos,
+        team:pick.s.team,
+        year:cat.career?"CAREER":pick.s.year,
+        v:pick.v,
+        lb:lbAll.slice(0,5).map(function(e,idx){
+          return {rank:idx+1,nm:e.p.nm,year:e.s.year,team:e.s.team,v:e.v};
+        }),
+        careerCat:cat.career||false
+      }
+    });
+    usedPlayers[pick.p.nm]=true;
+    usedConstraintIds[constraintId]=true;
+  }
+  return rows.length===5?{
+    rows:rows,
+    seed:Math.abs(hashSeedParts("teamcustom",spec.sport,spec.catId,JSON.stringify(teamList)))%999999,
+    catId:spec.catId,
+    sport:spec.sport,
+    custom:true,
+    customMode:"team",
+    teams:teamList
+  }:null;
+}
+
+function TeamBoardModal(props){
+  var initialSport=props.sport||"NFL";
+  var initialCatId=props.catId||((SPORT_CATS[initialSport]||[])[0]||{}).id||null;
+  var initialSpec=props.initialSpec&&props.initialSpec.customMode==="team"?props.initialSpec:null;
+  var [draftSport,setDraftSport]=useState(initialSpec&&initialSpec.sport||initialSport);
+  var [draftCatId,setDraftCatId]=useState(initialSpec&&initialSpec.catId||initialCatId);
+  var [selectedTeams,setSelectedTeams]=useState(function(){
+    return initialSpec&&Array.isArray(initialSpec.teams)?initialSpec.teams.slice():[];
+  });
+  var cats=SPORT_CATS[draftSport]||[];
+  var sc=SPORT_COLORS[draftSport]||SPORT_COLORS.NFL;
+  var teamOptions=useMemo(function(){return getTeamOptionsForCat(draftSport,draftCatId);},[draftSport,draftCatId]);
+  function toggleTeam(teamId){
+    setSelectedTeams(function(prev){
+      if(prev.indexOf(teamId)>=0) return prev.filter(function(t){return t!==teamId;});
+      return prev.concat(teamId);
+    });
+  }
+  function submit(){
+    if(!selectedTeams.length){
+      props.onError&&props.onError("Choose at least one team");
+      return;
+    }
+    props.onSave({
+      sport:draftSport,
+      catId:draftCatId,
+      customMode:"team",
+      teams:selectedTeams.slice()
+    });
+  }
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.82)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:80,padding:16}}>
+      <div style={{width:"100%",maxWidth:460,background:"#1f2430",borderRadius:18,border:"1px solid #374151",overflow:"hidden",maxHeight:"90vh",display:"flex",flexDirection:"column"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px",borderBottom:"1px solid #2f3746"}}>
+          <div>
+            <div style={{color:"#fff",fontFamily:"Arial Black,sans-serif",fontSize:20,lineHeight:1}}>TEAM BOARD</div>
+            <div style={{color:"#9ca3af",fontSize:11,fontWeight:600,marginTop:4}}>Choose one or more teams. The board auto-builds 5 rows and every answer stays restricted to those team seasons.</div>
+          </div>
+          <button onClick={props.onClose} style={{background:"transparent",border:"none",color:"#9ca3af",fontSize:28,cursor:"pointer",lineHeight:1}}>×</button>
+        </div>
+        <div style={{padding:16,overflowY:"auto",display:"flex",flexDirection:"column",gap:12}}>
+          <div style={{display:"flex",gap:8}}>
+            <select value={draftSport} onChange={function(e){
+              var nextSport=e.target.value;
+              var nextCats=SPORT_CATS[nextSport]||[];
+              setDraftSport(nextSport);
+              setDraftCatId((nextCats[0]||{}).id||"");
+              setSelectedTeams([]);
+            }} style={{flex:1,background:"#2a3040",border:"1px solid #374151",borderRadius:10,padding:"10px 12px",color:"white",fontSize:13}}>
+              {["NFL","NBA","MLB","NHL"].map(function(s){return <option key={s} value={s}>{s}</option>;})}
+            </select>
+            <select value={draftCatId||""} onChange={function(e){setDraftCatId(e.target.value);}} style={{flex:1.3,background:"#2a3040",border:"1px solid #374151",borderRadius:10,padding:"10px 12px",color:"white",fontSize:13}}>
+              {cats.map(function(c){return <option key={c.id} value={c.id}>{c.lbl} {c.sub}</option>;})}
+            </select>
+          </div>
+          <div style={{background:"#232830",border:"1px solid #374151",borderRadius:12,padding:12,display:"flex",flexDirection:"column",gap:10}}>
+            <div style={{color:"#fff",fontSize:14,fontWeight:800}}>Teams</div>
+            <div style={{color:"#9ca3af",fontSize:12,lineHeight:1.4}}>Tap teams to include them. This is simplified for mobile: pick teams and the app handles the qualifiers automatically.</div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(2,minmax(0,1fr))",gap:8}}>
+              {teamOptions.map(function(o){
+                var active=selectedTeams.indexOf(o.id)>=0;
+                return <button key={o.id} onClick={function(){toggleTeam(o.id);}} style={{display:"flex",alignItems:"center",gap:8,background:active?"rgba(34,197,94,0.16)":"#2a3040",border:"1px solid "+(active?sc.accent:"#374151"),borderRadius:10,padding:"10px 12px",color:"white",cursor:"pointer",fontWeight:700,textAlign:"left"}}>
+                  <SportLogo logo={{type:"team",val:o.id,sport:draftSport}} sport={draftSport} sz={28}/>
+                  <span style={{fontSize:13,lineHeight:1.15}}>{o.label}</span>
+                </button>;
+              })}
+            </div>
+          </div>
         </div>
         <div style={{padding:16,borderTop:"1px solid #2f3746",display:"flex",gap:8}}>
           <button onClick={props.onClose} style={{flex:1,background:"#2a3040",border:"none",borderRadius:10,padding:"11px",color:"#9ca3af",fontWeight:700,cursor:"pointer"}}>Cancel</button>
