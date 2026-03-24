@@ -1216,25 +1216,73 @@ function genCard(seed,catId,sport){
     return pool;
   }
   function addRowFromEntry(entry,rows,used,usedC){
-    var c=entry.c;
-    if(usedC[c.id]) return false;
-    var match=entry.lbAll.filter(function(e){return !used[e.p.nm]&&(!cat.career?c.fn(e.p,e.s):c.fn(e.p,e.p.seasons[0]));});
-    if(match.length<1) return false;
-    var pick=match[Math.floor(rand()*Math.min(5,match.length))];
-    var lbAll=entry.lbAll;
-    var ys=null,ye=null;
-    if(!cat.career&&c.logo&&(c.logo.type==="conf"||c.logo.type==="collegeConf")){
-      ye=parseInt(pick.s.year,10);
-      ys=ye-4;
-      lbAll=lbAll.filter(function(e){
-        var y=parseInt(e.s.year,10);
-        return !isNaN(y)&&y>=ys&&y<=ye;
-      });
-      if(lbAll.length<1) return false;
-    }
-    var lb=lbAll.slice(0,5).map(function(e,i){return {rank:i+1,nm:e.p.nm,year:e.s.year,team:e.s.team,v:e.v};});
-    var myr=lbAll.map(function(e){return e.s.year;});
-    var mn=Math.min.apply(null,myr),mx=Math.max.apply(null,myr);
+      var c=entry.c;
+      if(usedC[c.id]) return false;
+      var match=entry.lbAll.filter(function(e){return !used[e.p.nm]&&(!cat.career?c.fn(e.p,e.s):c.fn(e.p,e.p.seasons[0]));});
+      if(match.length<1) return false;
+      var pick=match[Math.floor(rand()*Math.min(5,match.length))];
+      var lbAll=entry.lbAll;
+      var ys=null,ye=null;
+      function getConstraintWindowType(logo){
+        if(!logo||!logo.type) return null;
+        if(logo.type==="college"||logo.type==="collegeConf") return null;
+        if(logo.type==="team") return "team";
+        if(logo.type==="quad") return "division";
+        if(logo.type==="conf") return "league";
+        if(["nfl","nba","mlb","nhl"].indexOf((""+logo.type).toLowerCase())>=0) return "league";
+        return null;
+      }
+      function pickWindowSize(kind){
+        if(kind==="team") return 12+Math.floor(rand()*17);
+        if(kind==="division") return 6+Math.floor(rand()*9);
+        if(kind==="league") return 3+Math.floor(rand()*3);
+        return null;
+      }
+      function clampWindowBounds(anchor,minYear,maxYear,size){
+        if(size==null||isNaN(anchor)||isNaN(minYear)||isNaN(maxYear)) return null;
+        var full=Math.max(1,maxYear-minYear+1);
+        var span=Math.min(size,full);
+        if(span>=full) return {ys:minYear,ye:maxYear};
+        var before=Math.floor(rand()*span);
+        var start=anchor-before;
+        var end=start+span-1;
+        if(start<minYear){
+          start=minYear;
+          end=start+span-1;
+        }
+        if(end>maxYear){
+          end=maxYear;
+          start=end-span+1;
+        }
+        return {ys:start,ye:end};
+      }
+      if(!cat.career&&c.logo){
+        var windowType=getConstraintWindowType(c.logo);
+        if(windowType){
+          var allYears=lbAll.map(function(e){return parseInt(e.s.year,10);}).filter(function(y){return !isNaN(y)&&y>0;});
+          var anchorYear=parseInt(pick.s.year,10);
+          if(allYears.length&& !isNaN(anchorYear)){
+            var bounds=clampWindowBounds(
+              anchorYear,
+              Math.min.apply(null,allYears),
+              Math.max.apply(null,allYears),
+              pickWindowSize(windowType)
+            );
+            if(bounds){
+              ys=bounds.ys;
+              ye=bounds.ye;
+              lbAll=lbAll.filter(function(e){
+                var y=parseInt(e.s.year,10);
+                return !isNaN(y)&&y>=ys&&y<=ye;
+              });
+              if(lbAll.length<1) return false;
+            }
+          }
+        }
+      }
+      var lb=lbAll.slice(0,5).map(function(e,i){return {rank:i+1,nm:e.p.nm,year:e.s.year,team:e.s.team,v:e.v};});
+      var myr=lbAll.map(function(e){return e.s.year;});
+      var mn=Math.min.apply(null,myr),mx=Math.max.apply(null,myr);
     var yl=cat.career?"CAREER":(mn===mx?""+mn:mn+" to "+mx);
     rows.push({c:c,yl:yl,ys:ys,ye:ye,ans:{nm:pick.p.nm,pos:pick.p.pos,team:pick.s.team,year:cat.career?"CAREER":pick.s.year,v:pick.v,lb:lb,careerCat:cat.career||false}});
     used[pick.p.nm]=true;
@@ -2406,7 +2454,7 @@ function ModalComp(props){
     if(sel.src==="local"){
       var doValidate=function(){
         var r=validate(sel.p.nm,parseInt(yr)||yr,row,cat,sport);
-        if(r.ok) onSuccess({nm:sel.p.nm,pos:r.pos,team:r.team,year:yr,val:r.v,pct:r.pct,lb:r.lb,careerCat:cat.career||false});
+        if(r.ok) onSuccess({id:sel.p.id||null,nm:sel.p.nm,pos:r.pos,team:r.team,year:yr,val:r.v,pct:r.pct,lb:r.lb,careerCat:cat.career||false});
         else setErr(r.err);
       };
       if(sport==="NFL"&&needsNFLMetaLookup(sel.p,row&&row.c&&row.c.id)){
@@ -2448,7 +2496,7 @@ function ModalComp(props){
       });
       lbC.push({nm:playerNm,year:p.end||yrN,team:"",v:cv});
       lbC.sort(function(a,b){return b.v-a.v;});
-      onSuccess({nm:playerNm,pos:p.pos||"",team:"",year:"CAREER",
+      onSuccess({id:p.id||null,nm:playerNm,pos:p.pos||"",team:"",year:"CAREER",
         val:cv,pct:calcPct(cv,av2),lb:lbC.slice(0,5),careerCat:true});
       return;
     }
@@ -2509,7 +2557,7 @@ function ModalComp(props){
     lbR.push({nm:playerNm,year:yr,team:s.team||"",v:absV});
     lbR.sort(function(a,b){return b.v-a.v;});
     lbR=lbR.slice(0,5).map(function(e,i){return Object.assign({},e,{rank:i+1});});
-    onSuccess({nm:playerNm,pos:p.pos||cat.pos||"",team:s.team||"",year:yr,
+    onSuccess({id:p.id||null,nm:playerNm,pos:p.pos||cat.pos||"",team:s.team||"",year:yr,
       val:absV,pct:calcPct(absV,av),lb:lbR,careerCat:false});
   }
 
@@ -3279,6 +3327,8 @@ var NFL_HS_MAP=null;
 var NFL_HS_PROMISE=null;
 var NFL_HS_NAME_MAP=null;
 var NFL_HS_NAME_PROMISE=null;
+var NBA_HS_MAP=null;
+var NBA_HS_PROMISE=null;
 
 function loadNFLHeadshots(){
   if(NFL_HS_MAP) return Promise.resolve(NFL_HS_MAP);
@@ -3297,6 +3347,15 @@ function loadNFLHeadshotsByName(){
     .then(function(d){NFL_HS_NAME_MAP=d||{};return NFL_HS_NAME_MAP;})
     .catch(function(){NFL_HS_NAME_MAP={};return NFL_HS_NAME_MAP;});
   return NFL_HS_NAME_PROMISE;
+}
+function loadNBAHeadshots(){
+  if(NBA_HS_MAP) return Promise.resolve(NBA_HS_MAP);
+  if(NBA_HS_PROMISE) return NBA_HS_PROMISE;
+  NBA_HS_PROMISE=fetch("/nba_headshots.json")
+    .then(function(r){return r.ok?r.json():{};})
+    .then(function(d){NBA_HS_MAP=d||{};return NBA_HS_MAP;})
+    .catch(function(){NBA_HS_MAP={};return NBA_HS_MAP;});
+  return NBA_HS_PROMISE;
 }
 
 function getHsUrl(sport,id){
@@ -3341,7 +3400,7 @@ function wikiHs(nm,cb){
     }).catch(function(){cb(null);});
 }
 
-function useHeadshot(nm,sport,espnId){
+function useHeadshot(nm,sport,espnId,playerId){
   var [url,setUrl]=useState(null);
   useEffect(function(){
     if(!nm||!sport) return;
@@ -3418,6 +3477,14 @@ function useHeadshot(nm,sport,espnId){
           });
           return;
         }
+        if(sport==="NBA"){
+          loadNBAHeadshots().then(function(map){
+            if(!active2||settled2) return;
+            offer2(map&&map[sid2]);
+          });
+          offer2(getHsUrl(sport,sid2));
+          return;
+        }
         if(sport==="NHL"){
           offerNhlLanding2(sid2);
           offer2("https://assets.nhle.com/mugs/nhl/latest/"+sid2+".png");
@@ -3461,6 +3528,7 @@ function useHeadshot(nm,sport,espnId){
       var baseData2=getSportData(sport);
       var baseP2=baseData2&&baseData2.pmap&&(baseData2.pmap[nmL2]||baseData2.pmap[stripped2]);
       var preferEspnNba2=!!(sport==="NBA"&&baseP2&&baseP2.end&&baseP2.end>=2015);
+      scanIdCandidate2(playerId);
       function queueLocalCandidates2(){
         scanIdCandidate2(PLAYER_IDS[sport]&&(PLAYER_IDS[sport][nmL2]||PLAYER_IDS[sport][stripped2]||PLAYER_IDS[sport][cleaned2]));
         scanIdCandidate2(findCanonicalLocalId2());
@@ -3782,7 +3850,7 @@ function useHeadshot(nm,sport,espnId){
       }).catch(function(){});
 
     return function(){active=false;};
-  },[nm,sport,espnId]);
+  },[nm,sport,espnId,playerId]);
   return url;
 }
 
@@ -3839,7 +3907,7 @@ function RevealedRow(props){
     }
     return null;
   },[safeName,sport]);
-  var headshot=useHeadshot(safeName,sport,_espnId);
+  var headshot=useHeadshot(safeName,sport,_espnId,ans.id||null);
   var teamInfo=getTeamMeta(ans.team,sport);
   var teamLogoSrc=SPORT_LOGOS[sport+"_"+ans.team]||SPORT_LOGOS[sport+"_"+teamInfo.key]||null;
   var qualLabel=row&&row.c&&row.c.q?(row.c.q.main||"None"):"None";
