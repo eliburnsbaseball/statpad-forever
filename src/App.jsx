@@ -2901,7 +2901,7 @@ var PLAYER_IDS={
     "patrick ewing":3001,
     "hakeem olajuwon":785,
     "david robinson":790,
-    "karl malone":787,
+    "karl malone":252,
     "john stockton":788,
     "magic johnson":1425,
     "larry bird":1434,
@@ -2933,7 +2933,7 @@ var PLAYER_IDS={
     "tony parker":2779,
     "manu ginobili":1759,
     "pau gasol":1713,
-    "scottie pippen":786,
+    "scottie pippen":663,
     "dennis rodman":1048,
     "isiah thomas":791,
     "clyde drexler":789,
@@ -3369,6 +3369,11 @@ var NFL_PAGE_HEADSHOTS={
   "phil simms":"https://static.www.nfl.com/image/private/t_headshot_desktop/league/lhzj6vxddl0epe3sj0h8",
   "jim brown":"https://static.www.nfl.com/image/private/t_headshot_desktop/league/putro8sfykabuanlfcu1"
 };
+var NBA_EXPLICIT_IDS={
+  "wilt chamberlain":76375,
+  "karl malone":252,
+  "scottie pippen":663
+};
 
 function loadNFLHeadshots(){
   if(NFL_HS_MAP) return Promise.resolve(NFL_HS_MAP);
@@ -3405,6 +3410,13 @@ function getHsUrl(sport,id){
   // MLB: MLB official photos CDN
   if(sport==="MLB") return "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/"+sid+"/headshot/67/current";
   if(sport==="NHL") return "https://assets.nhle.com/mugs/nhl/latest/"+sid+".png";
+  return null;
+}
+function getEspnHsUrl(sport,id){
+  if(!id) return null;
+  var sid=String(id);
+  if(sport==="NFL") return "https://a.espncdn.com/i/headshots/nfl/players/full/"+sid+".png";
+  if(sport==="NBA") return "https://a.espncdn.com/i/headshots/nba/players/full/"+sid+".png";
   return null;
 }
 
@@ -3569,6 +3581,7 @@ function useHeadshot(nm,sport,espnId,playerId){
             offer2(map&&map[sid2]);
           });
           offer2(getHsUrl(sport,sid2));
+          offer2(getEspnHsUrl(sport,sid2));
           return;
         }
         if(sport==="NHL"){
@@ -3620,6 +3633,14 @@ function useHeadshot(nm,sport,espnId,playerId){
         var preferRetiredNbaWiki2=!!(sport==="NBA"&&isRetiredByRange2);
         var preferEspnNba2=!!(sport==="NBA"&&baseP2&&baseP2.end&&baseP2.end>=2015);
         function queueLocalCandidates2(){
+          if(sport==="NBA"){
+            var explicitNbaId2=NBA_EXPLICIT_IDS[nmL2]||NBA_EXPLICIT_IDS[stripped2]||NBA_EXPLICIT_IDS[cleaned2];
+            scanIdCandidate2(explicitNbaId2);
+            if(baseP2&&baseP2.nm){
+              var baseNbaName2=(baseP2.nm||"").toLowerCase().trim();
+              scanIdCandidate2(NBA_EXPLICIT_IDS[baseNbaName2]);
+            }
+          }
           scanIdCandidate2(PLAYER_IDS[sport]&&(PLAYER_IDS[sport][nmL2]||PLAYER_IDS[sport][stripped2]||PLAYER_IDS[sport][cleaned2]));
           scanIdCandidate2(findCanonicalLocalId2());
           scanIdCandidate2(playerId);
@@ -3647,7 +3668,8 @@ function useHeadshot(nm,sport,espnId,playerId){
             offerWikiSearch2(nm,["basketball","nba","guard","forward","center","basketball player","nba player"]);
             if(baseP2&&baseP2.nm&&baseP2.nm!==nm) offerWikiSearch2(baseP2.nm+" NBA",["basketball","nba","guard","forward","center","basketball player","nba player"]);
           }
-          if(preferEspnNba2) setTimeout(queueLocalCandidates2,350);
+          if(preferRetiredNbaWiki2) queueLocalCandidates2();
+          else if(preferEspnNba2) setTimeout(queueLocalCandidates2,350);
           else if(preferRetiredNflWiki2||preferRetiredNbaWiki2) setTimeout(queueLocalCandidates2,1400);
           else queueLocalCandidates2();
           var deferNflName2=!!(sport==="NFL"&&(playerId||preferRetiredNflWiki2));
