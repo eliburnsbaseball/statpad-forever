@@ -2813,11 +2813,12 @@ var PLAYER_IDS={
     "myles garrett":3122840,
     "aaron donald":16158,
     "von miller":13977,
-    "wes welker":9632,
+    "wes welker":5941,
     "steve smith":5929,
     "antonio brown":14056,
     "frank gore":9547,
     "jamaal charles":11249,
+    "chris johnson":11258,
     "jonathan taylor":4040715,
     "ezekiel elliott":3054213,
     "david boston":3213,
@@ -2833,7 +2834,7 @@ var PLAYER_IDS={
     "jordy nelson":10459,
     "brandon marshall":9596,
     "anquan boldin":5489,
-    "reggie wayne":5897,
+    "reggie wayne":2578,
     "hines ward":5559,
     "laquon treadwell":3054311,
     "demaryius thomas":13234,
@@ -3342,6 +3343,10 @@ var NFL_HS_NAME_MAP=null;
 var NFL_HS_NAME_PROMISE=null;
 var NBA_HS_MAP=null;
 var NBA_HS_PROMISE=null;
+var NFL_PAGE_HEADSHOTS={
+  "phil simms":"https://static.www.nfl.com/image/private/t_headshot_desktop/league/lhzj6vxddl0epe3sj0h8",
+  "jim brown":"https://static.www.nfl.com/image/private/t_headshot_desktop/league/putro8sfykabuanlfcu1"
+};
 
 function loadNFLHeadshots(){
   if(NFL_HS_MAP) return Promise.resolve(NFL_HS_MAP);
@@ -3603,6 +3608,13 @@ function useHeadshot(nm,sport,espnId,playerId){
           scanIdCandidate2(cachedPlayer2&&cachedPlayer2.id);
           if(sport!=="NFL") scanIdCandidate2(espnId);
         }
+          if(sport==="NFL"){
+            offer2(NFL_PAGE_HEADSHOTS[nmL2]||NFL_PAGE_HEADSHOTS[stripped2]||NFL_PAGE_HEADSHOTS[cleaned2]);
+            if(baseP2&&baseP2.nm){
+              var baseName2=(baseP2.nm||"").toLowerCase().trim();
+              offer2(NFL_PAGE_HEADSHOTS[baseName2]);
+            }
+          }
           if(preferRetiredNflWiki2){
             offerWikiSearch2(nm+" NFL",["football","nfl","running back","wide receiver","quarterback","linebacker","american football"]);
             offerWikiSearch2(nm,["football","nfl","running back","wide receiver","quarterback","linebacker","american football"]);
