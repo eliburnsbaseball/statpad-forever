@@ -3588,12 +3588,15 @@ function useHeadshot(nm,sport,espnId,playerId){
           return;
         }
         if(sport==="NBA"){
-          loadNBAHeadshots().then(function(map){
-            if(!active2||settled2) return;
-            offer2(map&&map[sid2]);
-          });
-          offer2(getHsUrl(sport,sid2));
           offer2(getEspnHsUrl(sport,sid2));
+          setTimeout(function(){
+            if(!active2||settled2) return;
+            offer2(getHsUrl(sport,sid2));
+            loadNBAHeadshots().then(function(map){
+              if(!active2||settled2) return;
+              offer2(map&&map[sid2]);
+            });
+          },700);
           return;
         }
         if(sport==="NHL"){
@@ -3643,7 +3646,7 @@ function useHeadshot(nm,sport,espnId,playerId){
         var isHistoricalId2=!!(playerId&&String(playerId).indexOf("hist-")===0);
         var preferRetiredNflWiki2=!!(sport==="NFL"&&(isRetiredByRange2||isHistoricalId2));
         var preferRetiredNbaWiki2=!!(sport==="NBA"&&isRetiredByRange2);
-        var preferEspnNba2=!!(sport==="NBA"&&baseP2&&baseP2.end&&baseP2.end>=2015);
+        var preferEspnNba2=!!(sport==="NBA");
         function queueLocalCandidates2(){
           if(sport==="NBA"){
             var explicitNbaId2=NBA_EXPLICIT_IDS[nmL2]||NBA_EXPLICIT_IDS[stripped2]||NBA_EXPLICIT_IDS[cleaned2];
@@ -3684,7 +3687,7 @@ function useHeadshot(nm,sport,espnId,playerId){
             if(baseP2&&baseP2.nm&&baseP2.nm!==nm) offerWikiSearch2(baseP2.nm+" NBA",["basketball","nba","guard","forward","center","basketball player","nba player"]);
           }
           if(preferRetiredNbaWiki2) queueLocalCandidates2();
-          else if(preferEspnNba2) setTimeout(queueLocalCandidates2,350);
+          else if(preferEspnNba2) setTimeout(queueLocalCandidates2,550);
           else if(preferRetiredNflWiki2||preferRetiredNbaWiki2) setTimeout(queueLocalCandidates2,1400);
           else queueLocalCandidates2();
           var deferNflName2=!!(sport==="NFL");
