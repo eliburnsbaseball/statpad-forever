@@ -792,7 +792,7 @@ function getSupportedConstraints(sport,players,constraints){
 // ── UTILS ─────────────────────────────────────────────────────────────────
 var NFL_META_CACHE={};
 var NFL_META_PENDING={};
-var NFL_META_KEY_PREFIX="tpr_nfl_meta_v1|";
+var NFL_META_KEY_PREFIX="tpr_nfl_meta_v2|";
 var NFL_SEASON_FLAG_KEYS=["ap1","ap2","pb","sb","mvp","opoy","roy","sbMvp"];
 var NFL_PLACE_KEYS=["mvpPlace","opoyPlace","royPlace","droyPlace"];
 
@@ -823,6 +823,12 @@ function applyNFLSeasonDefaults(player){
   if(!player||!player.seasons) return player;
   var draftRd=num0(player.draftRd);
   var draftPk=num0(player.draftPk);
+  if(!draftRd&&!draftPk){
+    player.seasons.forEach(function(s){
+      if(!draftRd) draftRd=num0(s&&s.draftRd);
+      if(!draftPk) draftPk=num0(s&&s.draftPk);
+    });
+  }
   player.draftRd=draftRd;
   player.draftPk=draftPk;
   player.isUndrafted=(draftRd>0||draftPk>0)?0:num0(player.isUndrafted);
@@ -1526,8 +1532,8 @@ var DB_LISTENERS={NFL:[],NBA:[],MLB:[],NHL:[]};
 
 // localStorage keys
 var LS={
-  NHL:"tpr_nhl_db_v12",NBA:"tpr_nba_db_v12",MLB:"tpr_mlb_db_v12",NFL:"tpr_nfl_db_v12",
-  NHL_TS:"tpr_nhl_ts_v12",NBA_TS:"tpr_nba_ts_v12",MLB_TS:"tpr_mlb_ts_v12",NFL_TS:"tpr_nfl_ts_v12"
+  NHL:"tpr_nhl_db_v13",NBA:"tpr_nba_db_v13",MLB:"tpr_mlb_db_v13",NFL:"tpr_nfl_db_v13",
+  NHL_TS:"tpr_nhl_ts_v13",NBA_TS:"tpr_nba_ts_v13",MLB_TS:"tpr_mlb_ts_v13",NFL_TS:"tpr_nfl_ts_v13"
 };
 var CACHE_TTL=24*60*60*1000; // 24h
 
@@ -3272,6 +3278,7 @@ var PLAYER_IDS={
     "anquan boldin":5489,
     "reggie wayne":2578,
     "tony romo":5209,
+    "peyton hillis":11461,
     "hines ward":5559,
     "laquon treadwell":3054311,
     "demaryius thomas":13234,
@@ -4380,6 +4387,9 @@ function useHeadshot(nm,sport,espnId,playerId){
         if(sport==="NHL"){
           HS_CACHE[nhlTryKey]={id:pidStr,idx:0};
           done(getNHLHsUrl(pidStr,0));
+        } else if(sport==="MLB"){
+          if(isLikelyMlbStatsId(pidStr)) done(getHsUrl("MLB",pidStr));
+          else done(getEspnHsUrl("MLB",pidStr));
         } else {
           done(getHsUrl(sport,pidStr));
         }
@@ -4393,6 +4403,8 @@ function useHeadshot(nm,sport,espnId,playerId){
       if(sport==="NHL"){
         if(!HS_CACHE[nhlTryKey]) HS_CACHE[nhlTryKey]={id:eidStr,idx:0};
         done(getNHLHsUrl(eidStr,0));
+      } else if(sport==="MLB"){
+        done(getEspnHsUrl("MLB",eidStr));
       } else {
         done(getHsUrl(sport,eidStr));
       }
@@ -4406,6 +4418,8 @@ function useHeadshot(nm,sport,espnId,playerId){
       if(sport==="NHL"){
         if(!HS_CACHE[nhlTryKey]) HS_CACHE[nhlTryKey]={id:lpStr,idx:0};
         done(getNHLHsUrl(lpStr,0));
+      } else if(sport==="MLB"){
+        if(isLikelyMlbStatsId(lpStr)) done(getHsUrl("MLB",lpStr));
       } else {
         done(getHsUrl(sport,lpStr));
       }
