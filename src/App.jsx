@@ -3577,6 +3577,7 @@ var PLAYER_IDS={
     "mariano rivera":121358,
     "ken griffey jr.":116338,
     "barry bonds":111188,
+    "ernie banks":110533,
     "hank aaron":111113,
     "willie mays":24517,
     "derek jeter":118493,
@@ -3798,6 +3799,29 @@ function getEspnHsUrl(sport,id){
   if(sport==="NFL") return "https://a.espncdn.com/i/headshots/nfl/players/full/"+sid+".png";
   if(sport==="NBA") return "https://a.espncdn.com/i/headshots/nba/players/full/"+sid+".png";
   if(sport==="MLB") return "https://a.espncdn.com/i/headshots/mlb/players/full/"+sid+".png";
+  return null;
+}
+function getExplicitPlayerIdByName(sport,nm){
+  if(!sport||!nm||!PLAYER_IDS[sport]) return null;
+  var nmL=(nm||"").toLowerCase().trim();
+  var stripped=nmL.replace(/\s+(jr\.?|sr\.?|ii|iii|iv)$/i,"").trim();
+  var cleaned=(nm||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\*/g,"").trim();
+  return PLAYER_IDS[sport][nmL]||PLAYER_IDS[sport][stripped]||PLAYER_IDS[sport][cleaned]||null;
+}
+function isLikelyMlbStatsId(id){
+  var n=parseInt(id,10);
+  return !!(isFinite(n)&&n>=100000);
+}
+function getExplicitEspnHeadshotId(sport,nm){
+  var pid=getExplicitPlayerIdByName(sport,nm);
+  if(!pid) return null;
+  if(sport==="MLB"&&isLikelyMlbStatsId(pid)) return null;
+  return pid;
+}
+function getExplicitLocalHeadshotId(sport,nm){
+  var pid=getExplicitPlayerIdByName(sport,nm);
+  if(!pid) return null;
+  if(sport==="MLB"&&isLikelyMlbStatsId(pid)) return pid;
   return null;
 }
 
@@ -4046,7 +4070,7 @@ function useHeadshot(nm,sport,espnId,playerId){
         var preferRetiredNflWiki2=!!(sport==="NFL"&&(isRetiredByRange2||isHistoricalId2));
         var preferRetiredNbaWiki2=!!(sport==="NBA"&&isRetiredByRange2);
         var preferEspnNba2=!!(sport==="NBA");
-        var explicitEspnNflId2=sport==="NFL"?(PLAYER_IDS[sport]&&(PLAYER_IDS[sport][nmL2]||PLAYER_IDS[sport][stripped2]||PLAYER_IDS[sport][cleaned2])):null;
+        var explicitEspnNflId2=sport==="NFL"?getExplicitEspnHeadshotId("NFL",nm):null;
         var trustedNflEspnId2=sport==="NFL"?(explicitEspnNflId2||espnId):null;
         var liveP2=LIVE_PMAP[sport]&&(LIVE_PMAP[sport][nmL2]||LIVE_PMAP[sport][stripped2]);
         var cachedPlayer2=PLAYER_CACHE[sport+"|"+nmL2]||PLAYER_CACHE[sport+"|"+stripped2];
@@ -4074,11 +4098,13 @@ function useHeadshot(nm,sport,espnId,playerId){
             scanNbaLocalId2(playerId);
             scanNbaLocalId2(baseP2&&baseP2.id);
           } else if(sport==="MLB"){
-            var explicitEspnMlbId2=PLAYER_IDS[sport]&&(PLAYER_IDS[sport][nmL2]||PLAYER_IDS[sport][stripped2]||PLAYER_IDS[sport][cleaned2]);
+            var explicitEspnMlbId2=getExplicitEspnHeadshotId("MLB",nm);
+            var explicitLocalMlbId2=getExplicitLocalHeadshotId("MLB",nm);
             offerMlbEspnId2(explicitEspnMlbId2);
+            scanIdCandidate2(explicitLocalMlbId2);
             if(baseP2&&baseP2.nm){
-              var baseMlbEspnName2=(baseP2.nm||"").toLowerCase().trim();
-              offerMlbEspnId2(PLAYER_IDS[sport]&&PLAYER_IDS[sport][baseMlbEspnName2]);
+              offerMlbEspnId2(getExplicitEspnHeadshotId("MLB",baseP2.nm));
+              scanIdCandidate2(getExplicitLocalHeadshotId("MLB",baseP2.nm));
             }
             scanIdCandidate2(findCanonicalLocalId2());
             scanIdCandidate2(playerId);
@@ -4505,10 +4531,8 @@ function RevealedRow(props){
     var nmL=safeName.toLowerCase();
     var stripped=nmL.replace(/\s+(jr\.?|sr\.?|ii|iii|iv)$/i,"").trim();
     // 1. PLAYER_IDS table (pre-built, most reliable - correct ESPN/sport IDs)
-    if(PLAYER_IDS[sport]){
-      var pid=PLAYER_IDS[sport][nmL]||PLAYER_IDS[sport][stripped];
-      if(pid) return pid;
-    }
+    var explicitEspnId=getExplicitEspnHeadshotId(sport,safeName);
+    if(explicitEspnId) return explicitEspnId;
     // 2. PLAYER_CACHE (players fetched via live search/stats)
     for(var key in PLAYER_CACHE){
       if(PLAYER_CACHE[key]&&PLAYER_CACHE[key].id&&
@@ -4838,7 +4862,7 @@ function ExportBoardRow(props){
   var firstName=parts.join(" ");
   var nmL=safeName.toLowerCase().trim();
   var stripped=nmL.replace(/\s+(jr\.?|sr\.?|ii|iii|iv)$/i,"").trim();
-  var espnLookup=(PLAYER_IDS[sport]&&(PLAYER_IDS[sport][nmL]||PLAYER_IDS[sport][stripped]))||null;
+  var espnLookup=getExplicitEspnHeadshotId(sport,safeName);
   var headshot=useHeadshot(safeName,sport,espnLookup,ans.id||null);
   var teamColor=getTeamColor(ans.team,sport);
   var teamInfo=getTeamMeta(ans.team,sport);
