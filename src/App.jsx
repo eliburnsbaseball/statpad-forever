@@ -3658,6 +3658,7 @@ var PLAYER_IDS={
     "ronald acuna jr.":660670,
     "cody bellinger":641355,
     "christian yelich":592885,
+    "ryan mcmahon":39593,
     "zack greinke":461829,
     "david price":456034,
     "blake snell":605483,
@@ -4509,7 +4510,7 @@ function useHeadshot(nm,sport,espnId,playerId){
       }
       function useAthleteId(a){
         if(!a||!a.id||HS_CACHE[k]) return;
-        if(sport==="NBA"||sport==="NFL") offer2(getEspnHsUrl(sport,String(a.id)));
+        if(sport==="NBA"||sport==="NFL"||sport==="MLB") offer2(getEspnHsUrl(sport,String(a.id)));
         else offer2(getHsUrl(sport,String(a.id)));
       }
       // Search by last name
