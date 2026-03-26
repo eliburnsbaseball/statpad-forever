@@ -1526,8 +1526,8 @@ var DB_LISTENERS={NFL:[],NBA:[],MLB:[],NHL:[]};
 
 // localStorage keys
 var LS={
-  NHL:"tpr_nhl_db_v11",NBA:"tpr_nba_db_v11",MLB:"tpr_mlb_db_v11",NFL:"tpr_nfl_db_v11",
-  NHL_TS:"tpr_nhl_ts_v11",NBA_TS:"tpr_nba_ts_v11",MLB_TS:"tpr_mlb_ts_v11",NFL_TS:"tpr_nfl_ts_v11"
+  NHL:"tpr_nhl_db_v12",NBA:"tpr_nba_db_v12",MLB:"tpr_mlb_db_v12",NFL:"tpr_nfl_db_v12",
+  NHL_TS:"tpr_nhl_ts_v12",NBA_TS:"tpr_nba_ts_v12",MLB_TS:"tpr_mlb_ts_v12",NFL_TS:"tpr_nfl_ts_v12"
 };
 var CACHE_TTL=24*60*60*1000; // 24h
 
@@ -1579,6 +1579,37 @@ function getPlayerSeasonsDesc(player){
     .sort(function(a,b){return b-a;});
 }
 
+function canonicalizePlayerNameForSport(sport,name){
+  var nm=(name||"").trim();
+  if(sport==="NBA") nm=nm.replace(/\*+$/,"").trim();
+  return nm;
+}
+
+function getCanonicalPlayerNameKey(sport,p){
+  var raw=(p&&((p.nm)||(p.nmL)))||"";
+  return canonicalizePlayerNameForSport(sport,raw).toLowerCase();
+}
+
+function mergeSeasonLists(target, incoming){
+  var seasons=((target&&target.seasons)||[]).concat((incoming&&incoming.seasons)||[]);
+  var byYear={};
+  seasons.forEach(function(s){
+    var yr=parseInt(s&&s.year,10);
+    if(isNaN(yr)||yr<=0) return;
+    if(!byYear[yr]){
+      byYear[yr]=Object.assign({},s);
+      return;
+    }
+    byYear[yr]=Object.assign({},byYear[yr],s);
+  });
+  var merged=Object.keys(byYear).map(function(k){return byYear[k];}).sort(function(a,b){return num0(a.year)-num0(b.year);});
+  target.seasons=merged;
+  if(merged.length){
+    target.start=num0(merged[0].year)||target.start;
+    target.end=num0(merged[merged.length-1].year)||target.end;
+  }
+}
+
 function getPlayerStoreKey(p){
   var nmL=(p&&((p.nmL)||(p.nm&&p.nm.toLowerCase())))||"";
   var pos=(p&&p.pos)||"";
@@ -1595,22 +1626,38 @@ function mergePlayers(sport,newPlayers){
     p.pos=normalizePlayerPos(sport,p.pos,p.isGoalie);
     if(sport==="NFL") applyNFLSeasonDefaults(p);
     if(sport==="NHL") p.isGoalie=(p.pos==="G");
-    var nameKey=p.nmL||(p.nm&&p.nm.toLowerCase())||"";
+    var rawNameKey=(p.nmL||(p.nm&&p.nm.toLowerCase())||"").trim();
+    var nameKey=getCanonicalPlayerNameKey(sport,p);
     if(!nameKey) return;
     var storeKey=getPlayerStoreKey(p);
-    if(!existingByKey[storeKey]){
-      existingByKey[storeKey]=p;
-      LIVE_DB[sport].push(p);
+    var target=existingByKey[storeKey] || ((sport==="NBA") ? existingByName[nameKey] : null);
+    if(!target){
+      target=p;
+      if(sport==="NBA"){
+        target.nm=canonicalizePlayerNameForSport(sport,target.nm);
+        target.nmL=target.nm.toLowerCase();
+      }
+      existingByKey[storeKey]=target;
+      LIVE_DB[sport].push(target);
     } else {
-      var target=existingByKey[storeKey];
+      existingByKey[storeKey]=target;
       if(p.id&&!target.id) target.id=p.id;
       if(p.espnId&&!target.espnId) target.espnId=p.espnId;
       if(p.headshot&&!target.headshot) target.headshot=p.headshot;
       if(p.col&&!target.col) target.col=p.col;
       if(p.colConf&&!target.colConf) target.colConf=p.colConf;
+      if(!target.pos&&p.pos) target.pos=p.pos;
+      if(sport==="NBA"&&/\*$/.test(target.nm||"")&&!/\*$/.test(p.nm||"")){
+        target.nm=canonicalizePlayerNameForSport(sport,p.nm);
+        target.nmL=target.nm.toLowerCase();
+      }
+      mergeSeasonLists(target,p);
     }
-    if(!existingByName[nameKey]||((getLatestSeasonYear(p)||0)>(getLatestSeasonYear(existingByName[nameKey])||0))){
-      existingByName[nameKey]=existingByKey[storeKey];
+    existingByName[nameKey]=target;
+    if(rawNameKey) existingByName[rawNameKey]=target;
+    if(sport==="NBA"&&p.nm){
+      var strippedKey=canonicalizePlayerNameForSport(sport,p.nm).toLowerCase();
+      if(strippedKey) existingByName[strippedKey]=target;
     }
   });
 }
@@ -2851,9 +2898,10 @@ function ModalComp(props){
 
     // ── CASE 1: Local DB player (NFL/NBA always, MLB/NHL when no API id) ───────
     if(sel.src==="local"){
+      var yrLocal=easyMode?(pickBestSeasonForPlayer(sel.p,row,cat,sport)||parseInt(yr)||yr):(parseInt(yr)||yr);
       var doValidate=function(){
-        var r=validate(sel.p.nm,parseInt(yr)||yr,row,cat,sport);
-        if(r.ok) onSuccess({id:sel.p.id||null,nm:sel.p.nm,pos:r.pos,team:r.team,year:yr,val:r.v,pct:r.pct,lb:r.lb,careerCat:cat.career||false});
+        var r=validate(sel.p.nm,yrLocal,row,cat,sport);
+        if(r.ok) onSuccess({id:sel.p.id||null,nm:sel.p.nm,pos:r.pos,team:r.team,year:yrLocal,val:r.v,pct:r.pct,lb:r.lb,careerCat:cat.career||false});
         else setErr(r.err);
       };
       if(sport==="NFL"&&needsNFLMetaLookup(sel.p,row&&row.c&&row.c.id)){
@@ -2871,7 +2919,7 @@ function ModalComp(props){
     var p=sel.player;
     if(!p||!p.seasons){setErr("Player stats not loaded yet.");return;}
     var playerNm=sel.nm;
-    var yrN=parseInt(yr)||yr;
+    var yrN=easyMode?(pickBestSeasonForPlayer(p,row,cat,sport)||parseInt(yr)||yr):(parseInt(yr)||yr);
 
     // For career categories: use career fn
     if(cat.career){
