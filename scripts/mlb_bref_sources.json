@@ -1,0 +1,81 @@
+[
+  {
+    "id": "bondsba01",
+    "nm": "Barry Bonds",
+    "page": "https://www.baseball-reference.com/players/b/bondsba01.shtml",
+    "image": "https://www.baseball-reference.com/req/2025011210/images/headshots/e/e79d202f_br.jpg",
+    "options": [
+      "https://www.baseball-reference.com/req/2025011210/images/headshots/e/e79d202f_br.jpg",
+      "https://www.baseball-reference.com/req/2025011210/images/headshots/e/e79d202f_sabr.jpg",
+      "https://www.baseball-reference.com/req/2025011210/images/headshots/e/e79d202f_sabr_pit.jpg"
+    ],
+    "raw": "scripts/mlb_bref_raw/bondsba01.jpg"
+  },
+  {
+    "id": "womacto01",
+    "nm": "Tony Womack",
+    "page": "https://www.baseball-reference.com/players/w/womacto01.shtml",
+    "image": "https://www.baseball-reference.com/req/2025011210/images/headshots/c/c115d9b6_sabr.jpg",
+    "options": [
+      "https://www.baseball-reference.com/req/2025011210/images/headshots/c/c115d9b6_sabr.jpg",
+      "https://www.baseball-reference.com/req/2025011210/images/headshots/c/c115d9b6_davis.jpg"
+    ],
+    "raw": "scripts/mlb_bref_raw/womacto01.jpg"
+  },
+  {
+    "id": "seageky01",
+    "nm": "Kyle Seager",
+    "page": "https://www.baseball-reference.com/players/s/seageky01.shtml",
+    "image": "https://www.baseball-reference.com/req/2025011210/images/headshots/6/6a4dff11_mlbam.jpg",
+    "options": [
+      "https://www.baseball-reference.com/req/2025011210/images/headshots/6/6a4dff11_mlbam.jpg",
+      "https://www.baseball-reference.com/req/2025011210/images/headshots/6/6a4dff11_milb.jpg"
+    ],
+    "raw": "scripts/mlb_bref_raw/seageky01.jpg"
+  },
+  {
+    "id": "raleica01",
+    "nm": "Cal Raleigh",
+    "page": "https://www.baseball-reference.com/players/r/raleica01.shtml",
+    "image": "https://www.baseball-reference.com/req/2025011210/images/headshots/a/a4e8f44e_mlbam.jpg",
+    "options": [
+      "https://www.baseball-reference.com/req/2025011210/images/headshots/a/a4e8f44e_mlbam.jpg",
+      "https://www.baseball-reference.com/req/2025011210/images/headshots/a/a4e8f44e_milb.jpg"
+    ],
+    "raw": "scripts/mlb_bref_raw/raleica01.jpg"
+  },
+  {
+    "id": "caminju01",
+    "nm": "Junior Caminero",
+    "page": "https://www.baseball-reference.com/players/c/caminju01.shtml",
+    "image": "https://www.baseball-reference.com/req/2025011210/images/headshots/9/9f9f21fa_mlbam.jpg",
+    "options": [
+      "https://www.baseball-reference.com/req/2025011210/images/headshots/9/9f9f21fa_mlbam.jpg",
+      "https://www.baseball-reference.com/req/2025011210/images/headshots/9/9f9f21fa_milb.jpg"
+    ],
+    "raw": "scripts/mlb_bref_raw/caminju01.jpg"
+  },
+  {
+    "id": "mcmahry01",
+    "nm": "Ryan McMahon",
+    "page": "https://www.baseball-reference.com/players/m/mcmahry01.shtml",
+    "image": "https://www.baseball-reference.com/req/2025011210/images/headshots/6/6731e251_mlbam.jpg",
+    "options": [
+      "https://www.baseball-reference.com/req/2025011210/images/headshots/6/6731e251_mlbam.jpg",
+      "https://www.baseball-reference.com/req/2025011210/images/headshots/6/6731e251_milb.jpg"
+    ],
+    "raw": "scripts/mlb_bref_raw/mcmahry01.jpg"
+  },
+  {
+    "id": "yelicch01",
+    "nm": "Christian Yelich",
+    "page": "https://www.baseball-reference.com/players/y/yelicch01.shtml",
+    "image": "https://www.baseball-reference.com/req/2025011210/images/headshots/7/76d9fda9_mlbam.jpg",
+    "options": [
+      "https://www.baseball-reference.com/req/2025011210/images/headshots/7/76d9fda9_mlbam.jpg",
+      "https://www.baseball-reference.com/req/2025011210/images/headshots/7/76d9fda9_milb.jpg",
+      "https://www.baseball-reference.com/req/2025011210/images/headshots/7/76d9fda9_sabr_fla.jpg"
+    ],
+    "raw": "scripts/mlb_bref_raw/yelicch01.jpg"
+  }
+]

@@ -3632,6 +3632,7 @@ var PLAYER_IDS={
     "mariano rivera":121358,
     "ken griffey jr.":116338,
     "barry bonds":111188,
+    "kyle seager":30819,
     "ernie banks":110533,
     "hank aaron":111113,
     "willie mays":24517,
@@ -3657,8 +3658,10 @@ var PLAYER_IDS={
     "fernando tatis jr.":665487,
     "ronald acuna jr.":660670,
     "cody bellinger":641355,
-    "christian yelich":592885,
-    "ryan mcmahon":39593,
+    "christian yelich":31283,
+    "ryan mcmahon":33247,
+    "cal raleigh":41292,
+    "junior caminero":4905921,
     "zack greinke":461829,
     "david price":456034,
     "blake snell":605483,
@@ -3792,6 +3795,8 @@ var NFL_NBC_HS_MAP=null;
 var NFL_NBC_HS_PROMISE=null;
 var NBA_HS_MAP=null;
 var NBA_HS_PROMISE=null;
+var MLB_BREF_HS_MAP=null;
+var MLB_BREF_HS_PROMISE=null;
 var NFL_PAGE_HEADSHOTS={
   "phil simms":"https://static.www.nfl.com/image/private/t_headshot_desktop/league/lhzj6vxddl0epe3sj0h8",
   "jim brown":"https://static.www.nfl.com/image/private/t_headshot_desktop/league/putro8sfykabuanlfcu1"
@@ -3838,6 +3843,15 @@ function loadNBAHeadshots(){
     .then(function(d){NBA_HS_MAP=d||{};return NBA_HS_MAP;})
     .catch(function(){NBA_HS_MAP={};return NBA_HS_MAP;});
   return NBA_HS_PROMISE;
+}
+function loadMLBBrefHeadshots(){
+  if(MLB_BREF_HS_MAP) return Promise.resolve(MLB_BREF_HS_MAP);
+  if(MLB_BREF_HS_PROMISE) return MLB_BREF_HS_PROMISE;
+  MLB_BREF_HS_PROMISE=fetch("/mlb_headshots_bref.json")
+    .then(function(r){return r.ok?r.json():{};})
+    .then(function(d){MLB_BREF_HS_MAP=d||{};return MLB_BREF_HS_MAP;})
+    .catch(function(){MLB_BREF_HS_MAP={};return MLB_BREF_HS_MAP;});
+  return MLB_BREF_HS_PROMISE;
 }
 
 function getHsUrl(sport,id){
@@ -4037,6 +4051,10 @@ function useHeadshot(nm,sport,espnId,playerId){
           });
           return;
         }
+        if(sport==="MLB"){
+          if(isLikelyMlbStatsId(sid2)) offer2(getHsUrl("MLB",sid2));
+          return;
+        }
         if(sport==="NHL"){
           offerNhlLanding2(sid2);
           offer2("https://assets.nhle.com/mugs/nhl/latest/"+sid2+".png");
@@ -4084,6 +4102,24 @@ function useHeadshot(nm,sport,espnId,playerId){
       function offerMlbEspnId2(id){
         if(sport!=="MLB"||!id) return;
         offer2(getEspnHsUrl("MLB",String(id)));
+      }
+      function offerMlbBref2(id){
+        if(sport!=="MLB"||!id) return;
+        var sid2=String(id);
+        if(isLikelyMlbStatsId(sid2)) return;
+        loadMLBBrefHeadshots().then(function(map){
+          if(!active2||settled2) return;
+          offer2(map&&map[sid2]);
+        });
+      }
+      function offerMlbLocalId2(id){
+        if(sport!=="MLB"||!id) return;
+        var sid2=String(id);
+        if(!isLikelyMlbStatsId(sid2)) return;
+        setTimeout(function(){
+          if(!active2||settled2) return;
+          offer2(getHsUrl("MLB",sid2));
+        },1400);
       }
       function scanNbaLocalId2(id){
         if(sport!=="NBA"||!id) return;
@@ -4157,14 +4193,19 @@ function useHeadshot(nm,sport,espnId,playerId){
             var explicitEspnMlbId2=getExplicitEspnHeadshotId("MLB",nm);
             var explicitLocalMlbId2=getExplicitLocalHeadshotId("MLB",nm);
             offerMlbEspnId2(explicitEspnMlbId2);
-            scanIdCandidate2(explicitLocalMlbId2);
+            offerMlbBref2(explicitLocalMlbId2);
+            offerMlbLocalId2(explicitLocalMlbId2);
             if(baseP2&&baseP2.nm){
               offerMlbEspnId2(getExplicitEspnHeadshotId("MLB",baseP2.nm));
-              scanIdCandidate2(getExplicitLocalHeadshotId("MLB",baseP2.nm));
+              offerMlbBref2(getExplicitLocalHeadshotId("MLB",baseP2.nm));
+              offerMlbLocalId2(getExplicitLocalHeadshotId("MLB",baseP2.nm));
             }
-            scanIdCandidate2(findCanonicalLocalId2());
-            scanIdCandidate2(playerId);
-            scanIdCandidate2(baseP2&&baseP2.id);
+            offerMlbBref2(findCanonicalLocalId2());
+            offerMlbBref2(playerId);
+            offerMlbBref2(baseP2&&baseP2.id);
+            offerMlbLocalId2(findCanonicalLocalId2());
+            offerMlbLocalId2(playerId);
+            offerMlbLocalId2(baseP2&&baseP2.id);
           } else {
             scanIdCandidate2(PLAYER_IDS[sport]&&(PLAYER_IDS[sport][nmL2]||PLAYER_IDS[sport][stripped2]||PLAYER_IDS[sport][cleaned2]));
             scanIdCandidate2(findCanonicalLocalId2());
@@ -4173,13 +4214,13 @@ function useHeadshot(nm,sport,espnId,playerId){
           }
           if(sport==="NFL"){ }
           else if(sport==="NBA") scanNbaLocalId2(liveP2&&liveP2.id);
-          else if(sport==="MLB") scanIdCandidate2(liveP2&&liveP2.id);
+          else if(sport==="MLB"){ offerMlbBref2(liveP2&&liveP2.id); offerMlbLocalId2(liveP2&&liveP2.id); }
           else scanIdCandidate2(liveP2&&liveP2.id);
           if(sport==="NFL"){
             offerNflNBC2(cachedPlayer2&&cachedPlayer2.nm);
           }
           else if(sport==="NBA") scanNbaLocalId2(cachedPlayer2&&cachedPlayer2.id);
-          else if(sport==="MLB") scanIdCandidate2(cachedPlayer2&&cachedPlayer2.id);
+          else if(sport==="MLB"){ offerMlbBref2(cachedPlayer2&&cachedPlayer2.id); offerMlbLocalId2(cachedPlayer2&&cachedPlayer2.id); }
           else scanIdCandidate2(cachedPlayer2&&cachedPlayer2.id);
           if(sport==="NFL") offerNflEspnId2(espnId);
           else if(sport==="NBA") offerNbaEspnId2(espnId);
@@ -4266,7 +4307,7 @@ function useHeadshot(nm,sport,espnId,playerId){
             if(full2===normTarget2){best2=person2;break;}
             if(!best2&&looksLikeTarget2(full2)) best2=person2;
           }
-          if(best2&&best2.id) offerSportId2(best2.id);
+          if(best2&&best2.id) offerMlbLocalId2(best2.id);
         }
         fetchJson2("https://statsapi.mlb.com/api/v1/people/search?names="+encodeURIComponent(nm)+"&sportId=1&limit=10",tryMlbPeople2);
         if(last2&&last2.toLowerCase()!==nmL2) fetchJson2("https://statsapi.mlb.com/api/v1/people/search?names="+encodeURIComponent(last2)+"&sportId=1&limit=10",tryMlbPeople2);
