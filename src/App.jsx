@@ -1269,12 +1269,38 @@ function genCard(seed,catId,sport){
     });
     return pool;
   }
+  function pickBiasedSeasonMatch(match,sport,cat,constraint){
+    var limit=Math.min(match.length,sport==="MLB"?12:5);
+    var candidates=match.slice(0,limit);
+    if(!candidates.length) return null;
+    if(sport!=="MLB"||cat.career||isCollegeConstraint({c:constraint})) return candidates[Math.floor(rand()*candidates.length)];
+    var weighted=[];
+    candidates.forEach(function(entry,idx){
+      var year=parseInt(entry.s.year,10);
+      var yearWeight=1;
+      if(!isNaN(year)){
+        if(year>=2015) yearWeight=18;
+        else if(year>=2005) yearWeight=15;
+        else if(year>=1995) yearWeight=12;
+        else if(year>=1985) yearWeight=9;
+        else if(year>=1980) yearWeight=7;
+        else if(year>=1970) yearWeight=4;
+        else if(year>=1960) yearWeight=3;
+        else if(year>=1947) yearWeight=2;
+      }
+      var rankWeight=Math.max(1,limit-idx);
+      var totalWeight=yearWeight*rankWeight;
+      for(var i=0;i<totalWeight;i++) weighted.push(entry);
+    });
+    return weighted.length?weighted[Math.floor(rand()*weighted.length)]:candidates[Math.floor(rand()*candidates.length)];
+  }
   function addRowFromEntry(entry,rows,used,usedC){
       var c=entry.c;
       if(usedC[c.id]) return false;
       var match=entry.lbAll.filter(function(e){return !used[e.p.nm]&&(!cat.career?c.fn(e.p,e.s):c.fn(e.p,e.p.seasons[0]));});
       if(match.length<1) return false;
-      var pick=match[Math.floor(rand()*Math.min(5,match.length))];
+      var pick=pickBiasedSeasonMatch(match,sport,cat,c);
+      if(!pick) return false;
       var lbAll=entry.lbAll;
       var ys=null,ye=null;
       function getConstraintWindowType(logo){
