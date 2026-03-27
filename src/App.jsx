@@ -3897,6 +3897,12 @@ function getEspnHsUrl(sport,id){
   if(sport==="MLB") return "https://a.espncdn.com/i/headshots/mlb/players/full/"+sid+".png";
   return null;
 }
+var MLB_ESPN_HEADSHOT_IDS={
+  "carlos pena":4594
+};
+var MLB_BREF_HEADSHOT_IDS={
+  "carlos pena":"penaca01"
+};
 function getExplicitPlayerIdByName(sport,nm){
   if(!sport||!nm||!PLAYER_IDS[sport]) return null;
   var nmL=(nm||"").toLowerCase().trim();
@@ -3909,16 +3915,33 @@ function isLikelyMlbStatsId(id){
   return !!(isFinite(n)&&n>=100000);
 }
 function getExplicitEspnHeadshotId(sport,nm){
+  if(sport==="MLB"&&nm){
+    var mlbKey=(nm||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\*/g,"").trim();
+    if(MLB_ESPN_HEADSHOT_IDS[mlbKey]) return MLB_ESPN_HEADSHOT_IDS[mlbKey];
+  }
   var pid=getExplicitPlayerIdByName(sport,nm);
   if(!pid) return null;
   if(sport==="MLB"&&isLikelyMlbStatsId(pid)) return null;
   return pid;
 }
 function getExplicitLocalHeadshotId(sport,nm){
+  if(sport==="MLB"&&nm){
+    var mlbKey=(nm||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\*/g,"").trim();
+    if(MLB_BREF_HEADSHOT_IDS[mlbKey]) return MLB_BREF_HEADSHOT_IDS[mlbKey];
+  }
   var pid=getExplicitPlayerIdByName(sport,nm);
   if(!pid) return null;
   if(sport==="MLB"&&isLikelyMlbStatsId(pid)) return pid;
   return null;
+}
+function getPlayerInitials(nm){
+  var parts=String(nm||"").trim().split(/\s+/).filter(Boolean);
+  if(!parts.length) return "?";
+  var first=parts[0]||"";
+  var last=parts.length>1?parts[parts.length-1]:"";
+  if(/^(jr\.?|sr\.?|ii|iii|iv)$/i.test(last)&&parts.length>2) last=parts[parts.length-2]||"";
+  var initials=((first[0]||"")+(last[0]||"")).toUpperCase();
+  return initials||String(first[0]||"?").toUpperCase();
 }
 
 // NHL headshot cascade: bamcontent (all-time) first, then season-specific CDN
@@ -4695,20 +4718,14 @@ function RevealedRow(props){
   var qualLabel=row&&row.c&&row.c.q?(row.c.q.main||"None"):"None";
   var statUnit=cat&&cat.unit?cat.unit:"";
   var pctLabel=(pctNum||0)+"% OF MAX";
+  var initials=getPlayerInitials(safeName);
 
-  // Side-profile silhouette
-  var silhouette=(
-    <svg viewBox="0 0 80 120" preserveAspectRatio="xMidYMax meet"
-      style={{position:"absolute",bottom:0,left:0,width:"100%",height:"100%",
-        opacity:0.40,pointerEvents:"none"}}>
-      <ellipse cx="48" cy="18" rx="11" ry="13" fill="white"/>
-      <path d="M42,30 L45,38 L52,38 L54,30 Z" fill="white"/>
-      <path d="M30,38 Q28,42 26,75 Q25,82 32,84 L54,84 Q60,82 58,75 L54,38 Z" fill="white"/>
-      <path d="M54,42 Q66,52 68,70 Q68,74 64,74 Q60,74 59,70 L54,54 Z" fill="white"/>
-      <path d="M30,42 Q22,52 21,66 Q21,70 25,70 Q28,70 29,66 L32,54 Z" fill="white"/>
-      <path d="M44,82 L42,115 Q42,120 46,120 Q50,120 51,115 L52,82 Z" fill="white"/>
-      <path d="M36,82 L32,112 Q31,118 35,119 Q39,119 40,112 L44,82 Z" fill="white"/>
-    </svg>
+  var initialsFallback=(
+    <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",
+      color:"rgba(255,255,255,0.88)",fontFamily:"Arial Black,Impact,sans-serif",fontWeight:900,
+      fontSize:30,letterSpacing:1,pointerEvents:"none",textTransform:"uppercase"}}>
+      {initials}
+    </div>
   );
 
   return (
@@ -4763,7 +4780,7 @@ function RevealedRow(props){
                   maxHeight:"94%",maxWidth:"112%",width:"auto",
                   objectFit:"contain",objectPosition:"center bottom",
                   pointerEvents:"none"}}/>
-            ):silhouette}
+            ):initialsFallback}
           </div>
         </div>
 
@@ -5000,13 +5017,16 @@ function ExportBoardRow(props){
   var pctNum=typeof ans.pct==="number"&&isFinite(ans.pct)?ans.pct:0;
   var st=pctStyle(pctNum);
   var statUnit=cat&&cat.unit?cat.unit:"";
+  var initials=getPlayerInitials(safeName);
   return (
     <div style={{marginBottom:8,borderRadius:12,overflow:"hidden",position:"relative",height:102,border:"1px solid "+(st.bd||"transparent"),boxShadow:st.shadow||"none"}}>
       <div style={{position:"absolute",inset:0,background:"linear-gradient(90deg,"+teamColor+" 0%,"+teamColor+"dd 23%,"+teamColor+"66 48%,transparent 76%)",zIndex:0}}/>
       <div style={{position:"absolute",inset:0,background:st.bg,zIndex:-1}}/>
       <div style={{position:"absolute",left:10,top:10,width:86,height:82,borderRadius:12,overflow:"visible",background:"linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04))"}}>
         {teamLogoSrc&&<img src={teamLogoSrc} alt="" style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:98,height:98,objectFit:"contain",opacity:0.28,filter:"brightness(10) saturate(0)"}}/>}
-        {headshot&&<img src={headshot} alt={safeName} style={{position:"absolute",bottom:-1,left:"50%",transform:"translateX(-50%)",maxHeight:"94%",maxWidth:"112%",width:"auto",objectFit:"contain",objectPosition:"center bottom"}}/>}
+        {headshot
+          ? <img src={headshot} alt={safeName} style={{position:"absolute",bottom:-1,left:"50%",transform:"translateX(-50%)",maxHeight:"94%",maxWidth:"112%",width:"auto",objectFit:"contain",objectPosition:"center bottom"}}/>
+          : <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",color:"rgba(255,255,255,0.88)",fontFamily:"Arial Black,Impact,sans-serif",fontWeight:900,fontSize:30,letterSpacing:1,textTransform:"uppercase"}}>{initials}</div>}
       </div>
       <div style={{position:"absolute",left:112,right:132,top:20}}>
         <div style={{color:"rgba(255,255,255,0.55)",fontFamily:"system-ui,sans-serif",fontSize:9,fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",marginBottom:2}}>{firstName||"\u00A0"}</div>
