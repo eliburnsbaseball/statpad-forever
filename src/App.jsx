@@ -1183,6 +1183,10 @@ function pickBestSeasonForPlayer(player,row,cat,sport){
   if(!player||!player.seasons||!row||!row.c||cat&&cat.career) return null;
   var best=null;
   player.seasons.forEach(function(s){
+    if(row&&row.ys!=null&&row.ye!=null){
+      var y=parseInt(s.year,10);
+      if(isNaN(y)||y<row.ys||y>row.ye) return;
+    }
     if(!row.c.fn(player,s)) return;
     var v=getStatVal(s,cat,player);
     var absV=cat&&cat.invert?-v:v;
