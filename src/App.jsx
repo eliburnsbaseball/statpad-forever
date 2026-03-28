@@ -3821,6 +3821,8 @@ var ESPN_SHORT={NFL:"nfl",NBA:"nba",MLB:"mlb",NHL:"nhl"};
 var HS_CACHE={};
 var NFL_HS_MAP=null;
 var NFL_HS_PROMISE=null;
+var NFL_ESPN_ID_MAP=null;
+var NFL_ESPN_ID_PROMISE=null;
 var NFL_HS_NAME_MAP=null;
 var NFL_HS_NAME_PROMISE=null;
 var NFL_NBC_HS_MAP=null;
@@ -3848,6 +3850,15 @@ function loadNFLHeadshots(){
     .then(function(d){NFL_HS_MAP=d||{};return NFL_HS_MAP;})
     .catch(function(){NFL_HS_MAP={};return NFL_HS_MAP;});
   return NFL_HS_PROMISE;
+}
+function loadNFLEspnIds(){
+  if(NFL_ESPN_ID_MAP) return Promise.resolve(NFL_ESPN_ID_MAP);
+  if(NFL_ESPN_ID_PROMISE) return NFL_ESPN_ID_PROMISE;
+  NFL_ESPN_ID_PROMISE=fetch("/nfl_espn_ids.json")
+    .then(function(r){return r.ok?r.json():{};})
+    .then(function(d){NFL_ESPN_ID_MAP=d||{};return NFL_ESPN_ID_MAP;})
+    .catch(function(){NFL_ESPN_ID_MAP={};return NFL_ESPN_ID_MAP;});
+  return NFL_ESPN_ID_PROMISE;
 }
 function loadNFLHeadshotsByName(){
   if(NFL_HS_NAME_MAP) return Promise.resolve(NFL_HS_NAME_MAP);
@@ -4125,6 +4136,15 @@ function useHeadshot(nm,sport,espnId,playerId){
         if(sport!=="NFL"||!id) return;
         offer2(getEspnHsUrl("NFL",String(id)));
       }
+      function offerNflEspnName2(name){
+        if(sport!=="NFL"||!name) return;
+        var key2=(name||"").toLowerCase().replace(/\*/g,"").trim();
+        if(!key2) return;
+        loadNFLEspnIds().then(function(map){
+          if(!active2||settled2) return;
+          offerNflEspnId2(map&&map[key2]);
+        });
+      }
       function offerNflLocalId2(id){
         if(sport!=="NFL"||!id) return;
         var sid2=String(id);
@@ -4243,6 +4263,8 @@ function useHeadshot(nm,sport,espnId,playerId){
             }
           }
         if(sport==="NFL"){
+          offerNflEspnName2(nm);
+          if(baseP2&&baseP2.nm) offerNflEspnName2(baseP2.nm);
           offerNflEspnId2(explicitEspnNflId2);
           offerNflNBC2(nm);
           if(baseP2&&baseP2.nm) offerNflNBC2(baseP2.nm);
