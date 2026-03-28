@@ -63,6 +63,12 @@ def main():
     with open(INPUT_PATH, "r", encoding="utf-8") as f:
         items = json.load(f)
     out_map = {}
+    if os.path.exists(OUTPUT_MAP):
+        try:
+            with open(OUTPUT_MAP, "r", encoding="utf-8") as f:
+                out_map.update(json.load(f))
+        except Exception:
+            pass
     for item in items:
         name = item.get("name", "").strip()
         page_url = item.get("url", "").strip()

@@ -3291,6 +3291,7 @@ var PLAYER_IDS={
     "darren mcfadden":11238,
     "jamaal charles":11249,
     "chris johnson":11258,
+    "ahmad bradshaw":10693,
     "jonathan taylor":4040715,
     "ezekiel elliott":3054213,
     "david boston":3213,
@@ -4137,16 +4138,19 @@ function useHeadshot(nm,sport,espnId,playerId){
             }
             offer2(mapped2);
           });
-        },900);
+        },1600);
       }
       function offerNflNBC2(name){
         if(sport!=="NFL"||!name) return;
         var key2=normalizedName2(name);
         if(!key2) return;
-        loadNFLNBCHeadshots().then(function(map){
+        setTimeout(function(){
           if(!active2||settled2) return;
-          offer2(map&&map[key2]);
-        });
+          loadNFLNBCHeadshots().then(function(map){
+            if(!active2||settled2) return;
+            offer2(map&&map[key2]);
+          });
+        },900);
       }
       function offerNbaEspnId2(id){
         if(sport!=="NBA"||!id) return;
@@ -4182,10 +4186,13 @@ function useHeadshot(nm,sport,espnId,playerId){
         if(sport!=="NFL"||!name) return;
         var key2=normalizedName2(name);
         if(!key2) return;
-        loadNFLHeadshotsByName().then(function(map){
+        setTimeout(function(){
           if(!active2||settled2) return;
-          offer2(map&&map[key2]);
-        });
+          loadNFLHeadshotsByName().then(function(map){
+            if(!active2||settled2) return;
+            offer2(map&&map[key2]);
+          });
+        },2200);
       }
       function findCanonicalLocalId2(){
         var list2=(baseData2&&baseData2.data)||LIVE_DB[sport]||[];
@@ -4292,10 +4299,16 @@ function useHeadshot(nm,sport,espnId,playerId){
               offerNflLocalId2(cachedPlayer2&&cachedPlayer2.id);
               offerNFLName2(nm);
               if(baseP2&&baseP2.nm) offerNFLName2(baseP2.nm);
-              offer2(NFL_PAGE_HEADSHOTS[nmL2]||NFL_PAGE_HEADSHOTS[stripped2]||NFL_PAGE_HEADSHOTS[cleaned2]);
+              setTimeout(function(){
+                if(!active2||settled2) return;
+                offer2(NFL_PAGE_HEADSHOTS[nmL2]||NFL_PAGE_HEADSHOTS[stripped2]||NFL_PAGE_HEADSHOTS[cleaned2]);
+              },500);
               if(baseP2&&baseP2.nm){
                 var baseName2=(baseP2.nm||"").toLowerCase().trim();
-                offer2(NFL_PAGE_HEADSHOTS[baseName2]);
+                setTimeout(function(){
+                  if(!active2||settled2) return;
+                  offer2(NFL_PAGE_HEADSHOTS[baseName2]);
+                },500);
               }
             },1600);
           }
