@@ -1427,7 +1427,7 @@ function genCard(seed,catId,sport){
 // ── VALIDATE ─────────────────────────────────────────────────────────────
 function validate(nm,year,row,cat,sport){
   var sd=getLiveSportData(sport);
-  var p=sd.pmap[nm.toLowerCase()];
+  var p=pickNamedPlayerCandidate(sd,sport,nm,year,row,cat)||sd.pmap[nm.toLowerCase()];
   if(!p) return {ok:false,err:'"'+nm+'" not found'};
   if(sport==="NFL") applyNFLSeasonDefaults(p);
   var yearN=parseInt(year)||year;
@@ -1562,8 +1562,8 @@ var DB_LISTENERS={NFL:[],NBA:[],MLB:[],NHL:[]};
 
 // localStorage keys
 var LS={
-  NHL:"tpr_nhl_db_v13",NBA:"tpr_nba_db_v13",MLB:"tpr_mlb_db_v13",NFL:"tpr_nfl_db_v13",
-  NHL_TS:"tpr_nhl_ts_v13",NBA_TS:"tpr_nba_ts_v13",MLB_TS:"tpr_mlb_ts_v13",NFL_TS:"tpr_nfl_ts_v13"
+  NHL:"tpr_nhl_db_v13",NBA:"tpr_nba_db_v13",MLB:"tpr_mlb_db_v13",NFL:"tpr_nfl_db_v14",
+  NHL_TS:"tpr_nhl_ts_v13",NBA_TS:"tpr_nba_ts_v13",MLB_TS:"tpr_mlb_ts_v13",NFL_TS:"tpr_nfl_ts_v14"
 };
 var CACHE_TTL=24*60*60*1000; // 24h
 
@@ -1624,6 +1624,47 @@ function canonicalizePlayerNameForSport(sport,name){
 function getCanonicalPlayerNameKey(sport,p){
   var raw=(p&&((p.nm)||(p.nmL)))||"";
   return canonicalizePlayerNameForSport(sport,raw).toLowerCase();
+}
+
+function getPlayersByCanonicalName(sd,sport,name){
+  var key=canonicalizePlayerNameForSport(sport,name).toLowerCase().trim();
+  if(!key) return [];
+  return (sd&&sd.players||[]).filter(function(p){
+    return getCanonicalPlayerNameKey(sport,p)===key;
+  });
+}
+
+function pickNamedPlayerCandidate(sd,sport,name,year,row,cat){
+  var candidates=getPlayersByCanonicalName(sd,sport,name);
+  if(!candidates.length) return null;
+  var yearN=parseInt(year,10);
+  if(isNaN(yearN)) return candidates[0];
+  var scored=[];
+  candidates.forEach(function(p){
+    if(sport==="NFL") applyNFLSeasonDefaults(p);
+    (p.seasons||[]).forEach(function(s){
+      var sy=parseInt(s&&s.year,10);
+      if(sy!==yearN) return;
+      var inWindow=true;
+      if(!cat.career&&row&&row.ys!=null&&row.ye!=null){
+        inWindow=!isNaN(sy)&&sy>=row.ys&&sy<=row.ye;
+      }
+      var matchesConstraint=inWindow && !!row.c.fn(p,s);
+      var v=cat.career?getStatVal(null,cat,p):getStatVal(s,cat,p);
+      var absV=cat.invert?-v:v;
+      scored.push({p:p,s:s,matchesConstraint:matchesConstraint,absV:absV||0,inWindow:inWindow});
+    });
+  });
+  if(!scored.length) return candidates[0];
+  scored.sort(function(a,b){
+    if((a.matchesConstraint?1:0)!==(b.matchesConstraint?1:0)) return (b.matchesConstraint?1:0)-(a.matchesConstraint?1:0);
+    if((a.inWindow?1:0)!==(b.inWindow?1:0)) return (b.inWindow?1:0)-(a.inWindow?1:0);
+    if((a.absV||0)!==(b.absV||0)) return (b.absV||0)-(a.absV||0);
+    var aSpan=(getLatestSeasonYear(a.p)||num0(a.p.end))-(num0(a.p.start)||0);
+    var bSpan=(getLatestSeasonYear(b.p)||num0(b.p.end))-(num0(b.p.start)||0);
+    return bSpan-aSpan;
+  });
+  return scored[0].p;
 }
 
 function mergeSeasonLists(target, incoming){
@@ -2422,11 +2463,10 @@ function fetchSearch(q,sport,cb){
 
   function localOnly(){
     var localResults=[];
-    var pmap=LIVE_PMAP[sport]||{};
-    Object.keys(pmap).forEach(function(nameKey){
+    (LIVE_DB[sport]||[]).forEach(function(p){
+      var nameKey=getCanonicalPlayerNameKey(sport,p);
       if(nameKey.indexOf(qL)>=0){
-        var p=pmap[nameKey];
-        localResults.push({id:p.id||p.nmL||"",nm:p.nm,pos:p.pos||"",yrs:p.start&&p.end?p.start+"-"+p.end:""});
+        localResults.push({id:p.id||getPlayerStoreKey(p)||p.nmL||"",nm:p.nm,pos:p.pos||"",yrs:p.start&&p.end?p.start+"-"+p.end:"",p:p});
       }
     });
     localResults.sort(function(a,b){
@@ -2434,6 +2474,7 @@ function fetchSearch(q,sport,cb){
       if(ae!==be) return be-ae;
       var as2=a.nm.toLowerCase().indexOf(qL)===0?1:0,bs2=b.nm.toLowerCase().indexOf(qL)===0?1:0;
       if(as2!==bs2) return bs2-as2;
+      if((a.yrs||"")!==(b.yrs||"")) return (a.yrs||"").localeCompare(b.yrs||"");
       return a.nm.localeCompare(b.nm);
     });
     return localResults.slice(0,20);
@@ -2831,10 +2872,13 @@ function ModalComp(props){
   var allSugs=sel?[]:localSugs.map(function(p){
     return {src:"local",nm:p.nm,sub:p.start+"–"+p.end,p:p};
   }).concat(liveSugs.filter(function(r){
-    return localSugs.every(function(l){return l.nmL!==r.nm.toLowerCase();});
+    return localSugs.every(function(l){
+      return getCanonicalPlayerNameKey(sport,l)!==canonicalizePlayerNameForSport(sport,r.nm).toLowerCase();
+    });
   }).map(function(r){
-    // For NFL/NBA: results come from local LIVE_PMAP, treat as local
-    var localMatch=isLocalOnlySearch&&LIVE_PMAP[sport]&&LIVE_PMAP[sport][r.nm.toLowerCase()];
+    // For NFL/NBA: results come from local DB, but same-name players must stay distinct
+    var localMatches=isLocalOnlySearch?getPlayersByCanonicalName(sd,sport,r.nm):[];
+    var localMatch=localMatches.length===1?localMatches[0]:null;
     if(localMatch){
       return {src:"local",nm:r.nm,sub:r.yrs||r.pos,p:localMatch};
     }
@@ -2906,7 +2950,8 @@ function ModalComp(props){
   function pickAPI(item){
     if(!item.id) return;
     var nmL=item.nm.toLowerCase();
-    var localP=LIVE_PMAP[sport]&&(LIVE_PMAP[sport][nmL]||LIVE_PMAP[sport][nmL.replace(/\s+(jr\.?|sr\.?|ii|iii|iv)$/i,"").trim()]);
+    var localCandidates=getPlayersByCanonicalName(sd,sport,item.nm);
+    var localP=localCandidates.length===1?localCandidates[0]:(LIVE_PMAP[sport]&&(LIVE_PMAP[sport][nmL]||LIVE_PMAP[sport][nmL.replace(/\s+(jr\.?|sr\.?|ii|iii|iv)$/i,"").trim()]));
     if(localP&&localP.seasons&&localP.seasons.length>0){
       setSel({src:"local",p:localP});setQ(localP.nm);setErr(null);
       setYr(easyMode?(pickBestSeasonForPlayer(localP,row,cat,sport)||getLatestSeasonYear(localP)||localP.end):(getLatestSeasonYear(localP)||localP.end));
