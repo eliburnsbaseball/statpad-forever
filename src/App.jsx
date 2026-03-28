@@ -3295,6 +3295,7 @@ var PLAYER_IDS={
     "jonathan taylor":4040715,
     "ezekiel elliott":3054213,
     "david boston":3213,
+    "david carr":3529,
     "michael strahan":1436,
     "george kittle":3054245,
     "ceedee lamb":4360438,
